@@ -8,17 +8,34 @@ import EquipmentDetail from "./pages/EquipmentDetail";
 import Search from "./pages/Search";
 import Reports from "./pages/Reports";
 import Admin from "./pages/Admin";
+import { useCurrentUser } from "./hooks/useCurrentUser";
+import AccessDenied from "./components/AccessDenied";
+
 
 export default function App() {
+  const user = useCurrentUser();
   return (
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/equipment" element={<EquipmentList />} />
         <Route path="/equipment/:id" element={<EquipmentDetail />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/admin" element={<Admin />} />
+       <Route path="/search"
+  element={
+    user.role === "GlobalViewer" || user.role === "SystemAdmin" ? (
+      <Search />
+    ) : (
+      <AccessDenied />
+    )
+  }
+/>
+
+<Route
+  path="/admin"
+  element={
+    user.role === "SystemAdmin" ? <Admin /> : <AccessDenied />
+  }/>
+<Route path="/reports" element={<Reports />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
