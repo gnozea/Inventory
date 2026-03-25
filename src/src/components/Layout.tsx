@@ -63,6 +63,8 @@ export default function Layout() {
       <main style={{ flex: 1, padding: "24px" }}>
         <Outlet />
       </main>
+      import DevToolbar from "./DevToolbar";
+      <DevToolbar />
     </div>
   );
 }
