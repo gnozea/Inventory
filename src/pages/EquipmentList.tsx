@@ -1,79 +1,75 @@
-import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../hooks/useCurrentUser";
-import type { EquipmentItem } from "../types/equipment";
-import { fetchEquipment } from "../api/equipmentApi";
-import { exportEquipmentCsv } from "../utils/exportEquipmentCsv";
-
-type Column<T> = {
-  key: keyof T;
-  label: string;
-  adminOnly?: boolean;
-};
-
-const COLUMNS: Column<EquipmentItem>[] = [
-  { key: "equipmentId", label: "Equipment ID" },
-  { key: "itemName", label: "Item Name" },
-  { key: "category", label: "Category" },
-  { key: "equipmentResourceType", label: "Resource Type" },
-  { key: "deployableStatus", label: "Deployable Status" },
-  { key: "missionCapable", label: "Mission Capable" },
-  { key: "station", label: "Station" },
-  { key: "organizationName", label: "Organization" },
-  { key: "quantity", label: "Quantity" },
-  { key: "unit", label: "Unit" },
-  { key: "manufacturerMake", label: "Make" },
-  { key: "model", label: "Model" },
-
-  // Admin-only
-  { key: "cost", label: "Cost", adminOnly: true },
-  { key: "fairMarketValue", label: "FMV", adminOnly: true },
-];
+import EquipmentTable from "../components/EquipmentTable";
+import type { EquipmentRow } from "../components/EquipmentTable";
 
 export default function EquipmentList() {
-  const { role } = useCurrentUser();
-  const [rows, setRows] = useState<EquipmentItem[]>([]);
+  const user = useCurrentUser();
+  const navigate = useNavigate();
 
-  const isAdmin = role === "SystemAdmin";
-  const canExport = role === "SystemAdmin" || role === "Reporter";
+  const canAdd =
+    user.role === "SystemAdmin" ||
+    user.role === "AgencyAdmin" ||
+    user.role === "Editor";
 
-  useEffect(() => {
-    fetchEquipment().then(setRows);
-  }, []);
-
-  const visibleColumns = COLUMNS.filter(
-    (c) => !c.adminOnly || isAdmin
-  );
+  const rows: EquipmentRow[] = [
+    {
+      id: "1",
+      name: "Engine 7 — Pumper Truck",
+      category: "Vehicle",
+      location: "Station 4",
+      status: "Active",
+      canEdit: canAdd,
+    },
+    {
+      id: "2",
+      name: "AED Unit — Cardiac Monitor",
+      category: "Medical",
+      location: "Station 2",
+      status: "Maintenance",
+      canEdit: canAdd,
+    },
+    {
+      id: "3",
+      name: "Thermal Imaging Camera",
+      category: "Rescue",
+      location: "Station 4",
+      status: "Decommissioned",
+      canEdit: false,
+    },
+  ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Equipment List</h1>
+    <div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+        }}
+      >
+        <h1>My Equipment</h1>
 
-      {canExport && (
-        <button onClick={() => exportEquipmentCsv(rows)}>
-          Export CSV
-        </button>
-      )}
+        {canAdd && (
+          <button
+            onClick={() => navigate("/equipment/new")}
+            style={{
+              padding: "8px 12px",
+              fontWeight: 600,
+            }}
+          >
+            + Add equipment
+          </button>
+        )}
+      </div>
 
-      <table width="100%" cellPadding={8}>
-        <thead>
-          <tr>
-            {visibleColumns.map((c) => (
-              <th key={String(c.key)}>{c.label}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.recordId}>
-              {visibleColumns.map((c) => (
-                <td key={String(c.key)}>
-                  {String(row[c.key] ?? "")}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <EquipmentTable
+        rows={rows}
+        onRowClick={(row) =>
+          navigate(`/equipment/${row.id}`)
+        }
+      />
     </div>
   );
 }
