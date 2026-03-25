@@ -1,8 +1,10 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { useCurrentUser } from "../hooks/useCurrentUser";
 
 const sidebarWidth = 180;
 
 export default function Layout() {
+  const user = useCurrentUser();
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       {/* Sidebar */}
@@ -23,40 +25,49 @@ export default function Layout() {
 
         {/* Navigation */}
         <nav style={{ flex: 1 }}>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            <li>
-              <NavLink to="/" style={navLinkStyle}>
-                Dashboard
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/equipment" style={navLinkStyle}>
-                My Equipment
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/search" style={navLinkStyle}>
-                Global Search
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/reports" style={navLinkStyle}>
-                Reports
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/admin" style={navLinkStyle}>
-                Admin
-              </NavLink>
-            </li>
-          </ul>
-        </nav>
+  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+    <li>
+      <NavLink to="/" style={navLinkStyle}>
+        Dashboard
+      </NavLink>
+    </li>
+
+    <li>
+      <NavLink to="/equipment" style={navLinkStyle}>
+        My Equipment
+      </NavLink>
+    </li>
+
+    {(user.role === "GlobalViewer" || user.role === "SystemAdmin") && (
+      <li>
+        <NavLink to="/search" style={navLinkStyle}>
+          Global Search
+        </NavLink>
+      </li>
+    )}
+
+    <li>
+      <NavLink to="/reports" style={navLinkStyle}>
+        Reports
+      </NavLink>
+    </li>
+
+    {user.role === "SystemAdmin" && (
+      <li>
+        <NavLink to="/admin" style={navLinkStyle}>
+          Admin
+        </NavLink>
+      </li>
+    )}
+  </ul>
+</nav>
 
         {/* User info */}
         <div style={{ fontSize: "12px", opacity: 0.8 }}>
-          <div>User Name</div>
-          <div>Role</div>
-        </div>
+  <div>{user.name}</div>
+  <div>{user.role}</div>
+  <div>{user.agency}</div>
+</div>
       </aside>
 
       {/* Main content */}
