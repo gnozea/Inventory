@@ -188,4 +188,3 @@ function StatusBadge({ status }: { status: EquipmentStatus }) {
     </span>
   );
 }
-``
