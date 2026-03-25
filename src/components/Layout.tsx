@@ -1,61 +1,105 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useCurrentUser } from "../hooks/useCurrentUser";
-import DevToolbar from "./DevToolbar";
+
+const SIDEBAR_WIDTH = 180;
 
 export default function Layout() {
   const user = useCurrentUser();
 
+  const isSystemAdmin = user.role === "SystemAdmin";
+  const isGlobalViewer = user.role === "GlobalViewer";
+
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
+      {/* Sidebar */}
       <aside
         style={{
-          width: 180,
-          background: "#1f2933",
-          color: "#fff",
-          padding: "16px",
+          width: SIDEBAR_WIDTH,
+          background: "#f7f7f3",
+          borderRight: "1px solid #e5e7eb",
+          padding: "16px 12px",
           display: "flex",
           flexDirection: "column",
+          justifyContent: "space-between",
         }}
       >
-        <strong style={{ marginBottom: 24 }}>{user.agency}</strong>
+        {/* Top section */}
+        <div>
+          {/* Agency name */}
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 12,
+              letterSpacing: 0.5,
+              marginBottom: 16,
+            }}
+          >
+            {user.agency.toUpperCase()}
+          </div>
 
-        <nav style={{ flex: 1 }}>
-          <NavLink to="/">Dashboard</NavLink>
-          <br />
-          <NavLink to="/equipment">My Equipment</NavLink>
-          <br />
+          <NavGroup>
+            <NavItem to="/">Dashboard</NavItem>
+            <NavItem to="/equipment">My equipment</NavItem>
+            <NavItem to="/locations">Locations</NavItem>
+            <NavItem to="/reports">Reports</NavItem>
+            <NavItem to="/status-updates">Status updates</NavItem>
+          </NavGroup>
+        </div>
 
-          {(user.role === "SystemAdmin" ||
-            user.role === "GlobalViewer") && (
-            <>
-              <NavLink to="/search">Global Search</NavLink>
-              <br />
-            </>
+        {/* Bottom section */}
+        <div>
+          {(isGlobalViewer || isSystemAdmin) && (
+            <NavGroup>
+              <NavItem to="/search">Global search</NavItem>
+            </NavGroup>
           )}
 
-          <NavLink to="/reports">Reports</NavLink>
-          <br />
-
-          {user.role === "SystemAdmin" && (
-            <>
-              <NavLink to="/admin">Admin</NavLink>
-              <br />
-            </>
+          {isSystemAdmin && (
+            <NavGroup>
+              <NavItem to="/admin">Settings</NavItem>
+            </NavGroup>
           )}
-        </nav>
-
-        <div style={{ fontSize: 12, opacity: 0.8 }}>
-          {user.name}
-          <br />
-          {user.role}
         </div>
       </aside>
 
+      {/* Main content */}
       <main style={{ flex: 1, padding: 24 }}>
         <Outlet />
       </main>
-
-      <DevToolbar />
     </div>
+  );
+}
+
+/* ---------- helpers ---------- */
+
+function NavGroup({ children }: { children: React.ReactNode }) {
+  return <div style={{ marginBottom: 12 }}>{children}</div>;
+}
+
+function NavItem({
+  to,
+  children,
+}: {
+  to: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <NavLink
+      to={to}
+      end
+      style={({ isActive }) => ({
+        display: "block",
+        padding: "8px 10px",
+        borderRadius: 6,
+        marginBottom: 4,
+        fontSize: 14,
+        textDecoration: "none",
+        color: "#111827",
+        background: isActive ? "#e5f0ff" : "transparent",
+        fontWeight: isActive ? 600 : 400,
+      })}
+    >
+      {children}
+    </NavLink>
   );
 }

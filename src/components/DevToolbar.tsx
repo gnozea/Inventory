@@ -32,6 +32,7 @@ export default function DevToolbar() {
   function changeUser(id: number) {
     const user = USERS.find((u) => u.id === id);
     if (!user) return;
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     window.location.reload();
   }
@@ -74,4 +75,3 @@ export default function DevToolbar() {
     </div>
   );
 }
-

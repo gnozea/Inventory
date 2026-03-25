@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 
 type Status = "Active" | "Maintenance" | "Decommissioned";
@@ -54,29 +55,33 @@ const MOCK_EQUIPMENT: Equipment[] = [
 
 export default function Dashboard() {
   const user = useCurrentUser();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
-  // Fake loading delay
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 600);
     return () => clearTimeout(t);
   }, []);
 
-  // Agency filter
+  const canAddEquipment =
+    user.role === "SystemAdmin" ||
+    user.role === "AgencyAdmin" ||
+    user.role === "Editor";
+
   const visibleEquipment = useMemo(() => {
     if (user.role === "SystemAdmin") return MOCK_EQUIPMENT;
-    return MOCK_EQUIPMENT.filter(
-      (e) => e.agency === user.agency
-    );
+    return MOCK_EQUIPMENT.filter((e) => e.agency === user.agency);
   }, [user]);
 
-  // Metrics
   const metrics = useMemo(() => {
     return {
       total: visibleEquipment.length,
-      active: visibleEquipment.filter(e => e.status === "Active").length,
-      maintenance: visibleEquipment.filter(e => e.status === "Maintenance").length,
-      decommissioned: visibleEquipment.filter(e => e.status === "Decommissioned").length,
+      active: visibleEquipment.filter((e) => e.status === "Active").length,
+      maintenance: visibleEquipment.filter((e) => e.status === "Maintenance")
+        .length,
+      decommissioned: visibleEquipment.filter(
+        (e) => e.status === "Decommissioned"
+      ).length,
     };
   }, [visibleEquipment]);
 
@@ -90,24 +95,91 @@ export default function Dashboard() {
       .slice(0, 10);
   }, [visibleEquipment]);
 
-  if (loading) {
-    return <p>Loading dashboard…</p>;
-  }
+  const goToEquipment = (status?: Status) => {
+    if (status) {
+      navigate(`/equipment?status=${status}`);
+    } else {
+      navigate("/equipment");
+    }
+  };
+
+  if (loading) return <p>Loading dashboard…</p>;
 
   return (
     <div>
-      <h1>Dashboard</h1>
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 24,
+        }}
+      >
+        <div>
+          <h1 style={{ marginBottom: 4 }}>Dashboard</h1>
+          <div style={{ fontSize: 13, opacity: 0.7 }}>
+            {user.agency} · Showing your agency equipment
+          </div>
+        </div>
 
-      {/* Metrics */}
-      <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
-        <Metric label="Total" value={metrics.total} />
-        <Metric label="Active" value={metrics.active} />
-        <Metric label="Maintenance" value={metrics.maintenance} />
-        <Metric label="Decommissioned" value={metrics.decommissioned} />
+        <div style={{ display: "flex", gap: 12 }}>
+          <input
+            placeholder="Search my equipment…"
+            style={{
+              padding: "8px 10px",
+              borderRadius: 6,
+              border: "1px solid #d1d5db",
+            }}
+          />
+
+          {canAddEquipment && (
+            <button
+              onClick={() => navigate("/equipment/new")}
+              style={{
+                padding: "8px 12px",
+                fontWeight: 600,
+              }}
+            >
+              + Add equipment
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Recent table */}
-      <h2>Recent Equipment</h2>
+      {/* Metrics Grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gap: 16,
+          marginBottom: 32,
+        }}
+      >
+        <Metric
+          label="Total equipment"
+          value={metrics.total}
+          onClick={() => goToEquipment()}
+        />
+        <Metric
+          label="Active"
+          value={metrics.active}
+          onClick={() => goToEquipment("Active")}
+        />
+        <Metric
+          label="In maintenance"
+          value={metrics.maintenance}
+          onClick={() => goToEquipment("Maintenance")}
+        />
+        <Metric
+          label="Decommissioned"
+          value={metrics.decommissioned}
+          onClick={() => goToEquipment("Decommissioned")}
+        />
+      </div>
+
+      {/* Recent */}
+      <h2 style={{ marginBottom: 12 }}>Recent equipment</h2>
 
       <table width="100%" cellPadding={8}>
         <thead>
@@ -125,10 +197,14 @@ export default function Dashboard() {
               <td>{e.name}</td>
               <td>{e.category}</td>
               <td>{e.location}</td>
-              <td><StatusPill status={e.status} /></td>
               <td>
-                {user.role !== "Reporter" && (
+                <StatusPill status={e.status} />
+              </td>
+              <td>
+                {canAddEquipment ? (
                   <button>Edit</button>
+                ) : (
+                  <button>View</button>
                 )}
               </td>
             </tr>
@@ -141,11 +217,37 @@ export default function Dashboard() {
 
 /* ---------- helpers ---------- */
 
-function Metric({ label, value }: { label: string; value: number }) {
+function Metric({
+  label,
+  value,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  onClick: () => void;
+}) {
   return (
-    <div style={{ padding: 16, background: "#f3f4f6", borderRadius: 6 }}>
-      <div style={{ fontSize: 12, opacity: 0.7 }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: "bold" }}>{value}</div>
+    <div
+      onClick={onClick}
+      style={{
+        padding: 16,
+        background: "#f7f7f3",
+        borderRadius: 8,
+        cursor: "pointer",
+      }}
+    >
+      <div style={{ fontSize: 13, opacity: 0.7 }}>{label}</div>
+      <div style={{ fontSize: 26, fontWeight: 700 }}>{value}</div>
+      <div
+        style={{
+          marginTop: 6,
+          fontSize: 12,
+          color: "#2563eb",
+          textDecoration: "underline",
+        }}
+      >
+        View all
+      </div>
     </div>
   );
 }

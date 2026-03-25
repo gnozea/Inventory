@@ -1,14 +1,17 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import EquipmentList from "./pages/EquipmentList";
 import EquipmentDetail from "./pages/EquipmentDetail";
+import AddEquipment from "./pages/AddEquipment";
 import Search from "./pages/Search";
 import Reports from "./pages/Reports";
 import Admin from "./pages/Admin";
 import AccessDenied from "./components/AccessDenied";
 import { useCurrentUser } from "./hooks/useCurrentUser";
+
 
 export default function App() {
   const user = useCurrentUser();
@@ -19,7 +22,7 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/equipment" element={<EquipmentList />} />
         <Route path="/equipment/:id" element={<EquipmentDetail />} />
-
+        <Route path="/equipment/new" element={<AddEquipment />} />
         <Route
           path="/search"
           element={

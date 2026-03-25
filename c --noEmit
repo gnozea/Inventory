@@ -1,0 +1,539 @@
+[1mdiff --git a/src/App.tsx b/src/App.tsx[m
+[1mindex ca1b8da..84b84ce 100644[m
+[1m--- a/src/App.tsx[m
+[1m+++ b/src/App.tsx[m
+[36m@@ -9,6 +9,7 @@[m [mimport Reports from "./pages/Reports";[m
+ import Admin from "./pages/Admin";[m
+ import AccessDenied from "./components/AccessDenied";[m
+ import { useCurrentUser } from "./hooks/useCurrentUser";[m
+[32m+[m[32mimport AddEquipment from "./pages/AddEquipment";[m
+ [m
+ export default function App() {[m
+   const user = useCurrentUser();[m
+[36m@@ -19,7 +20,7 @@[m [mexport default function App() {[m
+         <Route path="/" element={<Dashboard />} />[m
+         <Route path="/equipment" element={<EquipmentList />} />[m
+         <Route path="/equipment/:id" element={<EquipmentDetail />} />[m
+[31m-[m
+[32m+[m[32m        <Route path="/equipment/new" element={<AddEquipment />} />[m
+         <Route[m
+           path="/search"[m
+           element={[m
+[1mdiff --git a/src/components/AccessDenied.tsx b/src/components/AccessDenied.tsx[m
+[1mindex 3eaab61..7b87ce4 100644[m
+[1m--- a/src/components/AccessDenied.tsx[m
+[1m+++ b/src/components/AccessDenied.tsx[m
+[36m@@ -5,5 +5,4 @@[m [mexport default function AccessDenied() {[m
+       <p>You do not have permission to view this page.</p>[m
+     </div>[m
+   );[m
+[31m-}[m
+[31m-[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/components/DevToolbar.tsx b/src/components/DevToolbar.tsx[m
+[1mindex 686ec98..51f7bea 100644[m
+[1m--- a/src/components/DevToolbar.tsx[m
+[1m+++ b/src/components/DevToolbar.tsx[m
+[36m@@ -32,6 +32,7 @@[m [mexport default function DevToolbar() {[m
+   function changeUser(id: number) {[m
+     const user = USERS.find((u) => u.id === id);[m
+     if (!user) return;[m
+[32m+[m
+     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));[m
+     window.location.reload();[m
+   }[m
+[36m@@ -73,5 +74,4 @@[m [mexport default function DevToolbar() {[m
+       </span>[m
+     </div>[m
+   );[m
+[31m-}[m
+[31m-[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/components/Layout.tsx b/src/components/Layout.tsx[m
+[1mindex c61662c..c56166a 100644[m
+[1m--- a/src/components/Layout.tsx[m
+[1m+++ b/src/components/Layout.tsx[m
+[36m@@ -1,61 +1,105 @@[m
+ import { NavLink, Outlet } from "react-router-dom";[m
+ import { useCurrentUser } from "../hooks/useCurrentUser";[m
+[31m-import DevToolbar from "./DevToolbar";[m
+[32m+[m
+[32m+[m[32mconst SIDEBAR_WIDTH = 180;[m
+ [m
+ export default function Layout() {[m
+   const user = useCurrentUser();[m
+ [m
+[32m+[m[32m  const isSystemAdmin = user.role === "SystemAdmin";[m
+[32m+[m[32m  const isGlobalViewer = user.role === "GlobalViewer";[m
+[32m+[m
+   return ([m
+     <div style={{ display: "flex", minHeight: "100vh" }}>[m
+[32m+[m[32m      {/* Sidebar */}[m
+       <aside[m
+         style={{[m
+[31m-          width: 180,[m
+[31m-          background: "#1f2933",[m
+[31m-          color: "#fff",[m
+[31m-          padding: "16px",[m
+[32m+[m[32m          width: SIDEBAR_WIDTH,[m
+[32m+[m[32m          background: "#f7f7f3",[m
+[32m+[m[32m          borderRight: "1px solid #e5e7eb",[m
+[32m+[m[32m          padding: "16px 12px",[m
+           display: "flex",[m
+           flexDirection: "column",[m
+[32m+[m[32m          justifyContent: "space-between",[m
+         }}[m
+       >[m
+[31m-        <strong style={{ marginBottom: 24 }}>{user.agency}</strong>[m
+[31m-[m
+[31m-        <nav style={{ flex: 1 }}>[m
+[31m-          <NavLink to="/">Dashboard</NavLink>[m
+[31m-          <br />[m
+[31m-          <NavLink to="/equipment">My Equipment</NavLink>[m
+[31m-          <br />[m
+[31m-[m
+[31m-          {(user.role === "SystemAdmin" ||[m
+[31m-            user.role === "GlobalViewer") && ([m
+[31m-            <>[m
+[31m-              <NavLink to="/search">Global Search</NavLink>[m
+[31m-              <br />[m
+[31m-            </>[m
+[31m-          )}[m
+[32m+[m[32m        {/* Top section */}[m
+[32m+[m[32m        <div>[m
+[32m+[m[32m          {/* Agency name */}[m
+[32m+[m[32m          <div[m
+[32m+[m[32m            style={{[m
+[32m+[m[32m              fontWeight: 700,[m
+[32m+[m[32m              fontSize: 12,[m
+[32m+[m[32m              letterSpacing: 0.5,[m
+[32m+[m[32m              marginBottom: 16,[m
+[32m+[m[32m            }}[m
+[32m+[m[32m          >[m
+[32m+[m[32m            {user.agency.toUpperCase()}[m
+[32m+[m[32m          </div>[m
+ [m
+[31m-          <NavLink to="/reports">Reports</NavLink>[m
+[31m-          <br />[m
+[32m+[m[32m          <NavGroup>[m
+[32m+[m[32m            <NavItem to="/">Dashboard</NavItem>[m
+[32m+[m[32m            <NavItem to="/equipment">My equipment</NavItem>[m
+[32m+[m[32m            <NavItem to="/locations">Locations</NavItem>[m
+[32m+[m[32m            <NavItem to="/reports">Reports</NavItem>[m
+[32m+[m[32m            <NavItem to="/status-updates">Status updates</NavItem>[m
+[32m+[m[32m          </NavGroup>[m
+[32m+[m[32m        </div>[m
+ [m
+[31m-          {user.role === "SystemAdmin" && ([m
+[31m-            <>[m
+[31m-              <NavLink to="/admin">Admin</NavLink>[m
+[31m-              <br />[m
+[31m-            </>[m
+[32m+[m[32m        {/* Bottom section */}[m
+[32m+[m[32m        <div>[m
+[32m+[m[32m          {(isGlobalViewer || isSystemAdmin) && ([m
+[32m+[m[32m            <NavGroup>[m
+[32m+[m[32m              <NavItem to="/search">Global search</NavItem>[m
+[32m+[m[32m            </NavGroup>[m
+           )}[m
+[31m-        </nav>[m
+ [m
+[31m-        <div style={{ fontSize: 12, opacity: 0.8 }}>[m
+[31m-          {user.name}[m
+[31m-          <br />[m
+[31m-          {user.role}[m
+[32m+[m[32m          {isSystemAdmin && ([m
+[32m+[m[32m            <NavGroup>[m
+[32m+[m[32m              <NavItem to="/admin">Settings</NavItem>[m
+[32m+[m[32m            </NavGroup>[m
+[32m+[m[32m          )}[m
+         </div>[m
+       </aside>[m
+ [m
+[32m+[m[32m      {/* Main content */}[m
+       <main style={{ flex: 1, padding: 24 }}>[m
+         <Outlet />[m
+       </main>[m
+[31m-[m
+[31m-      <DevToolbar />[m
+     </div>[m
+   );[m
+ }[m
+[32m+[m
+[32m+[m[32m/* ---------- helpers ---------- */[m
+[32m+[m
+[32m+[m[32mfunction NavGroup({ children }: { children: React.ReactNode }) {[m
+[32m+[m[32m  return <div style={{ marginBottom: 12 }}>{children}</div>;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction NavItem({[m
+[32m+[m[32m  to,[m
+[32m+[m[32m  children,[m
+[32m+[m[32m}: {[m
+[32m+[m[32m  to: string;[m
+[32m+[m[32m  children: React.ReactNode;[m
+[32m+[m[32m}) {[m
+[32m+[m[32m  return ([m
+[32m+[m[32m    <NavLink[m
+[32m+[m[32m      to={to}[m
+[32m+[m[32m      end[m
+[32m+[m[32m      style={({ isActive }) => ({[m
+[32m+[m[32m        display: "block",[m
+[32m+[m[32m        padding: "8px 10px",[m
+[32m+[m[32m        borderRadius: 6,[m
+[32m+[m[32m        marginBottom: 4,[m
+[32m+[m[32m        fontSize: 14,[m
+[32m+[m[32m        textDecoration: "none",[m
+[32m+[m[32m        color: "#111827",[m
+[32m+[m[32m        background: isActive ? "#e5f0ff" : "transparent",[m
+[32m+[m[32m        fontWeight: isActive ? 600 : 400,[m
+[32m+[m[32m      })}[m
+[32m+[m[32m    >[m
+[32m+[m[32m      {children}[m
+[32m+[m[32m    </NavLink>[m
+[32m+[m[32m  );[m
+[32m+[m[32m}[m
+[1mdiff --git a/src/hooks/useCurrentUser.ts b/src/hooks/useCurrentUser.ts[m
+[1mindex a439ca1..e62d272 100644[m
+[1m--- a/src/hooks/useCurrentUser.ts[m
+[1m+++ b/src/hooks/useCurrentUser.ts[m
+[36m@@ -31,4 +31,4 @@[m [mexport function useCurrentUser(): CurrentUser {[m
+ [m
+     return JSON.parse(raw) as CurrentUser;[m
+   }, []);[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/pages/Dashboard.tsx b/src/pages/Dashboard.tsx[m
+[1mindex 6a80025..2cabddc 100644[m
+[1m--- a/src/pages/Dashboard.tsx[m
+[1m+++ b/src/pages/Dashboard.tsx[m
+[36m@@ -1,4 +1,5 @@[m
+ import { useEffect, useMemo, useState } from "react";[m
+[32m+[m[32mimport { useNavigate } from "react-router-dom";[m
+ import { useCurrentUser } from "../hooks/useCurrentUser";[m
+ [m
+ type Status = "Active" | "Maintenance" | "Decommissioned";[m
+[36m@@ -54,29 +55,33 @@[m [mconst MOCK_EQUIPMENT: Equipment[] = [[m
+ [m
+ export default function Dashboard() {[m
+   const user = useCurrentUser();[m
+[32m+[m[32m  const navigate = useNavigate();[m
+   const [loading, setLoading] = useState(true);[m
+ [m
+[31m-  // Fake loading delay[m
+   useEffect(() => {[m
+     const t = setTimeout(() => setLoading(false), 600);[m
+     return () => clearTimeout(t);[m
+   }, []);[m
+ [m
+[31m-  // Agency filter[m
+[32m+[m[32m  const canAddEquipment =[m
+[32m+[m[32m    user.role === "SystemAdmin" ||[m
+[32m+[m[32m    user.role === "AgencyAdmin" ||[m
+[32m+[m[32m    user.role === "Editor";[m
+[32m+[m
+   const visibleEquipment = useMemo(() => {[m
+     if (user.role === "SystemAdmin") return MOCK_EQUIPMENT;[m
+[31m-    return MOCK_EQUIPMENT.filter([m
+[31m-      (e) => e.agency === user.agency[m
+[31m-    );[m
+[32m+[m[32m    return MOCK_EQUIPMENT.filter((e) => e.agency === user.agency);[m
+   }, [user]);[m
+ [m
+[31m-  // Metrics[m
+   const metrics = useMemo(() => {[m
+     return {[m
+       total: visibleEquipment.length,[m
+[31m-      active: visibleEquipment.filter(e => e.status === "Active").length,[m
+[31m-      maintenance: visibleEquipment.filter(e => e.status === "Maintenance").length,[m
+[31m-      decommissioned: visibleEquipment.filter(e => e.status === "Decommissioned").length,[m
+[32m+[m[32m      active: visibleEquipment.filter((e) => e.status === "Active").length,[m
+[32m+[m[32m      maintenance: visibleEquipment.filter((e) => e.status === "Maintenance")[m
+[32m+[m[32m        .length,[m
+[32m+[m[32m      decommissioned: visibleEquipment.filter([m
+[32m+[m[32m        (e) => e.status === "Decommissioned"[m
+[32m+[m[32m      ).length,[m
+     };[m
+   }, [visibleEquipment]);[m
+ [m
+[36m@@ -90,24 +95,91 @@[m [mexport default function Dashboard() {[m
+       .slice(0, 10);[m
+   }, [visibleEquipment]);[m
+ [m
+[31m-  if (loading) {[m
+[31m-    return <p>Loading dashboard…</p>;[m
+[31m-  }[m
+[32m+[m[32m  const goToEquipment = (status?: Status) => {[m
+[32m+[m[32m    if (status) {[m
+[32m+[m[32m      navigate(`/equipment?status=${status}`);[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      navigate("/equipment");[m
+[32m+[m[32m    }[m
+[32m+[m[32m  };[m
+[32m+[m
+[32m+[m[32m  if (loading) return <p>Loading dashboard…</p>;[m
+ [m
+   return ([m
+     <div>[m
+[31m-      <h1>Dashboard</h1>[m
+[31m-[m
+[31m-      {/* Metrics */}[m
+[31m-      <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>[m
+[31m-        <Metric label="Total" value={metrics.total} />[m
+[31m-        <Metric label="Active" value={metrics.active} />[m
+[31m-        <Metric label="Maintenance" value={metrics.maintenance} />[m
+[31m-        <Metric label="Decommissioned" value={metrics.decommissioned} />[m
+[32m+[m[32m      {/* Header */}[m
+[32m+[m[32m      <div[m
+[32m+[m[32m        style={{[m
+[32m+[m[32m          display: "flex",[m
+[32m+[m[32m          justifyContent: "space-between",[m
+[32m+[m[32m          alignItems: "center",[m
+[32m+[m[32m          marginBottom: 24,[m
+[32m+[m[32m        }}[m
+[32m+[m[32m      >[m
+[32m+[m[32m        <div>[m
+[32m+[m[32m          <h1 style={{ marginBottom: 4 }}>Dashboard</h1>[m
+[32m+[m[32m          <div style={{ fontSize: 13, opacity: 0.7 }}>[m
+[32m+[m[32m            {user.agency} · Showing your agency equipment[m
+[32m+[m[32m          </div>[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <div style={{ display: "flex", gap: 12 }}>[m
+[32m+[m[32m          <input[m
+[32m+[m[32m            placeholder="Search my equipment…"[m
+[32m+[m[32m            style={{[m
+[32m+[m[32m              padding: "8px 10px",[m
+[32m+[m[32m              borderRadius: 6,[m
+[32m+[m[32m              border: "1px solid #d1d5db",[m
+[32m+[m[32m            }}[m
+[32m+[m[32m          />[m
+[32m+[m
+[32m+[m[32m          {canAddEquipment && ([m
+[32m+[m[32m            <button[m
+[32m+[m[32m              onClick={() => navigate("/equipment/new")}[m
+[32m+[m[32m              style={{[m
+[32m+[m[32m                padding: "8px 12px",[m
+[32m+[m[32m                fontWeight: 600,[m
+[32m+[m[32m              }}[m
+[32m+[m[32m            >[m
+[32m+[m[32m              + Add equipment[m
+[32m+[m[32m            </button>[m
+[32m+[m[32m          )}[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m      </div>[m
+[32m+[m
+[32m+[m[32m      {/* Metrics Grid */}[m
+[32m+[m[32m      <div[m
+[32m+[m[32m        style={{[m
+[32m+[m[32m          display: "grid",[m
+[32m+[m[32m          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",[m
+[32m+[m[32m          gap: 16,[m
+[32m+[m[32m          marginBottom: 32,[m
+[32m+[m[32m        }}[m
+[32m+[m[32m      >[m
+[32m+[m[32m        <Metric[m
+[32m+[m[32m          label="Total equipment"[m
+[32m+[m[32m          value={metrics.total}[m
+[32m+[m[32m          onClick={() => goToEquipment()}[m
+[32m+[m[32m        />[m
+[32m+[m[32m        <Metric[m
+[32m+[m[32m          label="Active"[m
+[32m+[m[32m          value={metrics.active}[m
+[32m+[m[32m          onClick={() => goToEquipment("Active")}[m
+[32m+[m[32m        />[m
+[32m+[m[32m        <Metric[m
+[32m+[m[32m          label="In maintenance"[m
+[32m+[m[32m          value={metrics.maintenance}[m
+[32m+[m[32m          onClick={() => goToEquipment("Maintenance")}[m
+[32m+[m[32m        />[m
+[32m+[m[32m        <Metric[m
+[32m+[m[32m          label="Decommissioned"[m
+[32m+[m[32m          value={metrics.decommissioned}[m
+[32m+[m[32m          onClick={() => goToEquipment("Decommissioned")}[m
+[32m+[m[32m        />[m
+       </div>[m
+ [m
+[31m-      {/* Recent table */}[m
+[31m-      <h2>Recent Equipment</h2>[m
+[32m+[m[32m      {/* Recent */}[m
+[32m+[m[32m      <h2 style={{ marginBottom: 12 }}>Recent equipment</h2>[m
+ [m
+       <table width="100%" cellPadding={8}>[m
+         <thead>[m
+[36m@@ -125,10 +197,14 @@[m [mexport default function Dashboard() {[m
+               <td>{e.name}</td>[m
+               <td>{e.category}</td>[m
+               <td>{e.location}</td>[m
+[31m-              <td><StatusPill status={e.status} /></td>[m
+               <td>[m
+[31m-                {user.role !== "Reporter" && ([m
+[32m+[m[32m                <StatusPill status={e.status} />[m
+[32m+[m[32m              </td>[m
+[32m+[m[32m              <td>[m
+[32m+[m[32m                {canAddEquipment ? ([m
+                   <button>Edit</button>[m
+[32m+[m[32m                ) : ([m
+[32m+[m[32m                  <button>View</button>[m
+                 )}[m
+               </td>[m
+             </tr>[m
+[36m@@ -141,11 +217,37 @@[m [mexport default function Dashboard() {[m
+ [m
+ /* ---------- helpers ---------- */[m
+ [m
+[31m-function Metric({ label, value }: { label: string; value: number }) {[m
+[32m+[m[32mfunction Metric({[m
+[32m+[m[32m  label,[m
+[32m+[m[32m  value,[m
+[32m+[m[32m  onClick,[m
+[32m+[m[32m}: {[m
+[32m+[m[32m  label: string;[m
+[32m+[m[32m  value: number;[m
+[32m+[m[32m  onClick: () => void;[m
+[32m+[m[32m}) {[m
+   return ([m
+[31m-    <div style={{ padding: 16, background: "#f3f4f6", borderRadius: 6 }}>[m
+[31m-      <div style={{ fontSize: 12, opacity: 0.7 }}>{label}</div>[m
+[31m-      <div style={{ fontSize: 24, fontWeight: "bold" }}>{value}</div>[m
+[32m+[m[32m    <div[m
+[32m+[m[32m      onClick={onClick}[m
+[32m+[m[32m      style={{[m
+[32m+[m[32m        padding: 16,[m
+[32m+[m[32m        background: "#f7f7f3",[m
+[32m+[m[32m        borderRadius: 8,[m
+[32m+[m[32m        cursor: "pointer",[m
+[32m+[m[32m      }}[m
+[32m+[m[32m    >[m
+[32m+[m[32m      <div style={{ fontSize: 13, opacity: 0.7 }}>{label}</div>[m
+[32m+[m[32m      <div style={{ fontSize: 26, fontWeight: 700 }}>{value}</div>[m
+[32m+[m[32m      <div[m
+[32m+[m[32m        style={{[m
+[32m+[m[32m          marginTop: 6,[m
+[32m+[m[32m          fontSize: 12,[m
+[32m+[m[32m          color: "#2563eb",[m
+[32m+[m[32m          textDecoration: "underline",[m
+[32m+[m[32m        }}[m
+[32m+[m[32m      >[m
+[32m+[m[32m        View all[m
+[32m+[m[32m      </div>[m
+     </div>[m
+   );[m
+ }[m
+[1mdiff --git a/src/pages/EquipmentDetail.tsx b/src/pages/EquipmentDetail.tsx[m
+[1mindex f0e9c24..1b2cbf9 100644[m
+[1m--- a/src/pages/EquipmentDetail.tsx[m
+[1m+++ b/src/pages/EquipmentDetail.tsx[m
+[36m@@ -1,3 +1,19 @@[m
+[32m+[m[32mimport { useParams } from "react-router-dom";[m
+[32m+[m
+ export default function EquipmentDetail() {[m
+[31m-  return <h1>Equipment Detail</h1>;[m
+[31m-}[m
+[32m+[m[32m  const { id } = useParams();[m
+[32m+[m
+[32m+[m[32m  return ([m
+[32m+[m[32m    <div style={{ padding: 24 }}>[m
+[32m+[m[32m      <h1>Equipment Detail</h1>[m
+[32m+[m[32m      <p>Equipment ID: {id}</p>[m
+[32m+[m
+[32m+[m[32m      <section><h2>General Information</h2></section>[m
+[32m+[m[32m      <section><h2>Status & Readiness</h2></section>[m
+[32m+[m[32m      <section><h2>Inventory</h2></section>[m
+[32m+[m[32m      <section><h2>Manufacturer</h2></section>[m
+[32m+[m[32m      <section><h2>Contacts</h2></section>[m
+[32m+[m[32m      <section><h2>Notes</h2></section>[m
+[32m+[m[32m    </div>[m
+[32m+[m[32m  );[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/pages/EquipmentList.tsx b/src/pages/EquipmentList.tsx[m
+[1mindex 326b883..b191822 100644[m
+[1m--- a/src/pages/EquipmentList.tsx[m
+[1m+++ b/src/pages/EquipmentList.tsx[m
+[36m@@ -1,3 +1,79 @@[m
+[32m+[m[32mimport { useEffect, useState } from "react";[m
+[32m+[m[32mimport { useCurrentUser } from "../hooks/useCurrentUser";[m
+[32m+[m[32mimport type { EquipmentItem } from "../types/equipment";[m
+[32m+[m[32mimport { fetchEquipment } from "../api/equipmentApi";[m
+[32m+[m[32mimport { exportEquipmentCsv } from "../utils/exportEquipmentCsv";[m
+[32m+[m
+[32m+[m[32mtype Column<T> = {[m
+[32m+[m[32m  key: keyof T;[m
+[32m+[m[32m  label: string;[m
+[32m+[m[32m  adminOnly?: boolean;[m
+[32m+[m[32m};[m
+[32m+[m
+[32m+[m[32mconst COLUMNS: Column<EquipmentItem>[] = [[m
+[32m+[m[32m  { key: "equipmentId", label: "Equipment ID" },[m
+[32m+[m[32m  { key: "itemName", label: "Item Name" },[m
+[32m+[m[32m  { key: "category", label: "Category" },[m
+[32m+[m[32m  { key: "equipmentResourceType", label: "Resource Type" },[m
+[32m+[m[32m  { key: "deployableStatus", label: "Deployable Status" },[m
+[32m+[m[32m  { key: "missionCapable", label: "Mission Capable" },[m
+[32m+[m[32m  { key: "station", label: "Station" },[m
+[32m+[m[32m  { key: "organizationName", label: "Organization" },[m
+[32m+[m[32m  { key: "quantity", label: "Quantity" },[m
+[32m+[m[32m  { key: "unit", label: "Unit" },[m
+[32m+[m[32m  { key: "manufacturerMake", label: "Make" },[m
+[32m+[m[32m  { key: "model", label: "Model" },[m
+[32m+[m
+[32m+[m[32m  // Admin-only[m
+[32m+[m[32m  { key: "cost", label: "Cost", adminOnly: true },[m
+[32m+[m[32m  { key: "fairMarketValue", label: "FMV", adminOnly: true },[m
+[32m+[m[32m];[m
+[32m+[m
+ export default function EquipmentList() {[m
+[31m-  return <h1>Equipment List</h1>;[m
+[31m-}[m
+[32m+[m[32m  const { role } = useCurrentUser();[m
+[32m+[m[32m  const [rows, setRows] = useState<EquipmentItem[]>([]);[m
+[32m+[m
+[32m+[m[32m  const isAdmin = role === "SystemAdmin";[m
+[32m+[m[32m  const canExport = role === "SystemAdmin" || role === "Reporter";[m
+[32m+[m
+[32m+[m[32m  useEffect(() => {[m
+[32m+[m[32m    fetchEquipment().then(setRows);[m
+[32m+[m[32m  }, []);[m
+[32m+[m
+[32m+[m[32m  const visibleColumns = COLUMNS.filter([m
+[32m+[m[32m    (c) => !c.adminOnly || isAdmin[m
+[32m+[m[32m  );[m
+[32m+[m
+[32m+[m[32m  return ([m
+[32m+[m[32m    <div style={{ padding: 24 }}>[m
+[32m+[m[32m      <h1>Equipment List</h1>[m
+[32m+[m
+[32m+[m[32m      {canExport && ([m
+[32m+[m[32m        <button onClick={() => exportEquipmentCsv(rows)}>[m
+[32m+[m[32m          Export CSV[m
+[32m+[m[32m        </button>[m
+[32m+[m[32m      )}[m
+[32m+[m
+[32m+[m[32m      <table width="100%" cellPadding={8}>[m
+[32m+[m[32m        <thead>[m
+[32m+[m[32m          <tr>[m
+[32m+[m[32m            {visibleColumns.map((c) => ([m
+[32m+[m[32m              <th key={String(c.key)}>{c.label}</th>[m
+[32m+[m[32m            ))}[m
+[32m+[m[32m          </tr>[m
+[32m+[m[32m        </thead>[m
+[32m+[m[32m        <tbody>[m
+[32m+[m[32m          {rows.map((row) => ([m
+[32m+[m[32m            <tr key={row.recordId}>[m
+[32m+[m[32m              {visibleColumns.map((c) => ([m
+[32m+[m[32m                <td key={String(c.key)}>[m
+[32m+[m[32m                  {String(row[c.key] ?? "")}[m
+[32m+[m[32m                </td>[m
+[32m+[m[32m              ))}[m
+[32m+[m[32m            </tr>[m
+[32m+[m[32m          ))}[m
+[32m+[m[32m        </tbody>[m
+[32m+[m[32m      </table>[m
+[32m+[m[32m    </div>[m
+[32m+[m[32m  );[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
