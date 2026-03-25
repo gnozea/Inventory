@@ -1,43 +1,45 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Layout from "./components/Layout";
-
 import Dashboard from "./pages/Dashboard";
 import EquipmentList from "./pages/EquipmentList";
 import EquipmentDetail from "./pages/EquipmentDetail";
 import Search from "./pages/Search";
 import Reports from "./pages/Reports";
 import Admin from "./pages/Admin";
-import { useCurrentUser } from "./hooks/useCurrentUser";
 import AccessDenied from "./components/AccessDenied";
-
+import { useCurrentUser } from "./hooks/useCurrentUser";
 
 export default function App() {
   const user = useCurrentUser();
+
   return (
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/equipment" element={<EquipmentList />} />
         <Route path="/equipment/:id" element={<EquipmentDetail />} />
-       <Route path="/search"
-  element={
-    user.role === "GlobalViewer" || user.role === "SystemAdmin" ? (
-      <Search />
-    ) : (
-      <AccessDenied />
-    )
-  }
-/>
 
-<Route
-  path="/admin"
-  element={
-    user.role === "SystemAdmin" ? <Admin /> : <AccessDenied />
-  }/>
-<Route path="/reports" element={<Reports />} />
+        <Route
+          path="/search"
+          element={
+            user.role === "GlobalViewer" || user.role === "SystemAdmin" ? (
+              <Search />
+            ) : (
+              <AccessDenied />
+            )
+          }
+        />
 
-        {/* Fallback */}
+        <Route path="/reports" element={<Reports />} />
+
+        <Route
+          path="/admin"
+          element={
+            user.role === "SystemAdmin" ? <Admin /> : <AccessDenied />
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
