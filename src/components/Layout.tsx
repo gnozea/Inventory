@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useCurrentUser } from "../hooks/useCurrentUser";
+import DevToolbar from "./DevToolbar"; // ✅ ADD THIS
 
 const SIDEBAR_WIDTH = 180;
 
@@ -66,6 +67,9 @@ export default function Layout() {
       <main style={{ flex: 1, padding: 24 }}>
         <Outlet />
       </main>
+
+      {/* ✅ DEV TOOLBAR — MUST BE HERE */}
+      <DevToolbar />
     </div>
   );
 }
