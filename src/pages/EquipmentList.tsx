@@ -1,71 +1,64 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import EquipmentTable from "../components/EquipmentTable";
 import type { EquipmentRow } from "../components/EquipmentTable";
-import {
-  filterVisibleEquipment,
-} from "../utils/visibility";
 
-/* ---------------- mock data ---------------- */
+/* =========================
+   Mock data (same style as before)
+   ========================= */
 
 const ALL_EQUIPMENT: EquipmentRow[] = [
   {
-    id: "1",
-    name: "Engine 7 — Pumper Truck",
+    id: 1,
+    name: "Rescue Truck 1",
     category: "Vehicle",
-    location: "Station 4",
+    location: "Station 1",
     status: "Active",
-    agency: "Fire Dept A",
+    agency: "Fire Dept",
   },
   {
-    id: "2",
-    name: "AED Unit — Cardiac Monitor",
-    category: "Medical",
+    id: 2,
+    name: "Thermal Camera",
+    category: "Electronics",
     location: "Station 2",
     status: "Maintenance",
-    agency: "Fire Dept B",
+    agency: "Fire Dept",
   },
   {
-    id: "3",
-    name: "Thermal Imaging Camera",
-    category: "Rescue",
-    location: "Station 4",
+    id: 3,
+    name: "HazMat Trailer",
+    category: "Trailer",
+    location: "Depot",
     status: "Decommissioned",
-    agency: "Fire Dept A",
+    agency: "Fire Dept",
   },
 ];
 
-/* ---------------- equipment list ---------------- */
+/* =========================
+   Page
+   ========================= */
 
 export default function EquipmentList() {
   const user = useCurrentUser();
-  const navigate = useNavigate();
 
   const [equipment, setEquipment] =
     useState<EquipmentRow[]>(ALL_EQUIPMENT);
 
-  const visible = useMemo(
-    () => filterVisibleEquipment(user, equipment),
-    [user, equipment]
+  // ✅ Organization-bound visibility only (stable behavior)
+  const visibleEquipment = useMemo(
+    () =>
+      equipment.filter(
+        (e) => e.agency === user.agency
+      ),
+    [equipment, user.agency]
   );
-
-  const canAdd = user.role !== "Reporter";
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <h1>My Equipment</h1>
-
-        {canAdd && (
-          <button onClick={() => navigate("/equipment/new")}>
-            + Add equipment
-          </button>
-        )}
-      </div>
+      <h1>My Equipment</h1>
 
       <EquipmentTable
-        rows={visible}
+        rows={visibleEquipment}
         onChange={setEquipment}
       />
     </div>

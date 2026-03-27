@@ -1,19 +1,34 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
-/* =======================
-   ✅ SHARED DATA MODEL
-   ======================= */
+/* =========================
+   Types
+   ========================= */
 
 export type EquipmentRow = {
-  id: string;
+  id: number;
   name: string;
   category: string;
   location: string;
   status: "Active" | "Maintenance" | "Decommissioned";
-
-  // ✅ REQUIRED for visibility rules
   agency: string;
 };
+
+/* =========================
+   Constants
+   ========================= */
+
+const CATEGORY_OPTIONS = [
+  "Vehicle",
+  "Electronics",
+  "Trailer",
+  "Rescue",
+  "Medical",
+];
+
+/* =========================
+   Component
+   ========================= */
 
 export default function EquipmentTable({
   rows,
@@ -22,22 +37,16 @@ export default function EquipmentTable({
   rows: EquipmentRow[];
   onChange: (rows: EquipmentRow[]) => void;
 }) {
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  const grid = {
-    display: "grid",
-    gridTemplateColumns: "2fr 1fr 1.5fr 1fr auto",
-    alignItems: "center",
-  };
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   function update(
-    id: string,
+    id: number,
     field: keyof EquipmentRow,
     value: string
   ) {
     onChange(
-      rows.map((r) =>
-        r.id === id ? { ...r, [field]: value } : r
+      rows.map((row) =>
+        row.id === id ? { ...row, [field]: value } : row
       )
     );
   }
@@ -45,130 +54,214 @@ export default function EquipmentTable({
   return (
     <div
       style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
-        borderRadius: 12,
+        borderRadius: 10,
         overflow: "hidden",
+        border: "1px solid #e5e7eb",
+        background: "#ffffff",
       }}
     >
-      {/* Header */}
-      <div
-        style={{
-          ...grid,
-          padding: "12px 16px",
-          fontSize: 12,
-          fontWeight: 600,
-          color: "#6b7280",
-          borderBottom: "1px solid #e5e7eb",
-        }}
+      <table
+        width="100%"
+        cellPadding={0}
+        cellSpacing={0}
+        style={{ borderCollapse: "collapse" }}
       >
-        <div>Name</div>
-        <div>Category</div>
-        <div>Location</div>
-        <div>Status</div>
-        <div />
-      </div>
-
-      {/* Rows */}
-      {rows.map((e) => {
-        const editing = editingId === e.id;
-
-        return (
-          <div
-            key={e.id}
+        <thead>
+          <tr
             style={{
-              ...grid,
-              padding: "14px 16px",
-              borderBottom: "1px solid #f3f4f6",
+              background: "#f9fafb",
+              borderBottom: "1px solid #e5e7eb",
             }}
           >
-            <div style={{ fontWeight: 600 }}>{e.name}</div>
+            <th align="left" style={thStyle}>Name</th>
+            <th align="left" style={thStyle}>Category</th>
+            <th align="left" style={thStyle}>Location</th>
+            <th align="left" style={thStyle}>Status</th>
+            <th style={thStyle} />
+          </tr>
+        </thead>
 
-            <div>
-              {editing ? (
-                <input
-                  value={e.category}
-                  onChange={(ev) =>
-                    update(e.id, "category", ev.target.value)
-                  }
-                />
-              ) : (
-                e.category
-              )}
-            </div>
+        <tbody>
+          {rows.map((row) => {
+            const isEditing = editingId === row.id;
 
-            <div>
-              {editing ? (
-                <input
-                  value={e.location}
-                  onChange={(ev) =>
-                    update(e.id, "location", ev.target.value)
-                  }
-                />
-              ) : (
-                e.location
-              )}
-            </div>
+            return (
+              <tr
+                key={row.id}
+                style={{ borderBottom: "1px solid #f3f4f6" }}
+              >
+                {/* Name */}
+                <td style={tdStyle}>
+                  {isEditing ? (
+                    <input
+                      value={row.name}
+                      onChange={(e) =>
+                        update(row.id, "name", e.target.value)
+                      }
+                      style={inputStyle}
+                    />
+                  ) : (
+                    row.name
+                  )}
+                </td>
 
-            <div>
-              {editing ? (
-                <select
-                  value={e.status}
-                  onChange={(ev) =>
-                    update(e.id, "status", ev.target.value)
-                  }
-                >
-                  <option value="Active">Active</option>
-                  <option value="Maintenance">Maintenance</option>
-                  <option value="Decommissioned">Decommissioned</option>
-                </select>
-              ) : (
-                <StatusPill status={e.status} />
-              )}
-            </div>
+                {/* Category */}
+                <td style={tdStyle}>
+                  {isEditing ? (
+                    <select
+                      value={row.category}
+                      onChange={(e) =>
+                        update(row.id, "category", e.target.value)
+                      }
+                      style={inputStyle}
+                    >
+                      {CATEGORY_OPTIONS.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    row.category
+                  )}
+                </td>
 
-            <div style={{ textAlign: "right" }}>
-              {editing ? (
-                <button onClick={() => setEditingId(null)}>
-                  Save
-                </button>
-              ) : (
-                <button onClick={() => setEditingId(e.id)}>
-                  Edit
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })}
+                {/* ✅ Location — Correct Route */}
+                <td style={tdStyle}>
+                  {isEditing ? (
+                    <input
+                      value={row.location}
+                      onChange={(e) =>
+                        update(row.id, "location", e.target.value)
+                      }
+                      style={inputStyle}
+                    />
+                  ) : (
+                    <Link
+                      to={`/app/locations?location=${encodeURIComponent(
+                        row.location
+                      )}`}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        color: "#2563eb",
+                        textDecoration: "underline",
+                        fontSize: 14,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {row.location}
+                    </Link>
+                  )}
+                </td>
+
+                {/* Status */}
+                <td style={tdStyle}>
+                  {isEditing ? (
+                    <select
+                      value={row.status}
+                      onChange={(e) =>
+                        update(row.id, "status", e.target.value)
+                      }
+                      style={inputStyle}
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Maintenance">Maintenance</option>
+                      <option value="Decommissioned">
+                        Decommissioned
+                      </option>
+                    </select>
+                  ) : (
+                    <StatusPill status={row.status} />
+                  )}
+                </td>
+
+                {/* Actions */}
+                <td style={tdStyle}>
+                  {isEditing ? (
+                    <button
+                      onClick={() => setEditingId(null)}
+                      style={buttonStyle}
+                    >
+                      Save
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setEditingId(row.id)}
+                      style={buttonStyle}
+                    >
+                      Edit
+                    </button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-/* =======================
-   ✅ STATUS PILL
-   ======================= */
+/* =========================
+   Styles
+   ========================= */
+
+const thStyle: React.CSSProperties = {
+  padding: "12px",
+  fontSize: 13,
+  fontWeight: 600,
+  borderRight: "1px solid #e5e7eb",
+  whiteSpace: "nowrap",
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: "10px 12px",
+  fontSize: 14,
+  borderRight: "1px solid #f3f4f6",
+  verticalAlign: "middle",
+};
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "6px 8px",
+  fontSize: 14,
+  borderRadius: 6,
+  border: "1px solid #d1d5db",
+};
+
+const buttonStyle: React.CSSProperties = {
+  padding: "4px 12px",
+  fontSize: 13,
+  borderRadius: 6,
+};
+
+/* =========================
+   Status Pill
+   ========================= */
 
 function StatusPill({
   status,
 }: {
   status: EquipmentRow["status"];
 }) {
-  const map = {
+  const colors: Record<
+    EquipmentRow["status"],
+    { bg: string; fg: string }
+  > = {
     Active: { bg: "#dcfce7", fg: "#166534" },
     Maintenance: { bg: "#fef3c7", fg: "#92400e" },
     Decommissioned: { bg: "#fee2e2", fg: "#991b1b" },
-  }[status];
+  };
 
   return (
     <span
       style={{
-        padding: "2px 8px",
+        padding: "4px 8px",
         borderRadius: 999,
+        background: colors[status].bg,
+        color: colors[status].fg,
         fontSize: 12,
         fontWeight: 600,
-        background: map.bg,
-        color: map.fg,
       }}
     >
       {status}

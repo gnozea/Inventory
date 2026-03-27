@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Layout from "./components/Layout";
@@ -12,17 +11,24 @@ import Admin from "./pages/Admin";
 import AccessDenied from "./components/AccessDenied";
 import { useCurrentUser } from "./hooks/useCurrentUser";
 
-
 export default function App() {
   const user = useCurrentUser();
 
   return (
     <Routes>
       <Route element={<Layout />}>
+        {/* Dashboard */}
         <Route path="/" element={<Dashboard />} />
+
+        {/* Equipment */}
         <Route path="/equipment" element={<EquipmentList />} />
         <Route path="/equipment/:id" element={<EquipmentDetail />} />
         <Route path="/equipment/new" element={<AddEquipment />} />
+
+        {/* ✅ Locations → reuse Equipment table */}
+        <Route path="/locations" element={<EquipmentList />} />
+
+        {/* Search */}
         <Route
           path="/search"
           element={
@@ -34,8 +40,10 @@ export default function App() {
           }
         />
 
+        {/* Reports */}
         <Route path="/reports" element={<Reports />} />
 
+        {/* Admin */}
         <Route
           path="/admin"
           element={
@@ -43,6 +51,7 @@ export default function App() {
           }
         />
 
+        {/* Catch‑all → Dashboard */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
