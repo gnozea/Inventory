@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-
-/* =========================
-   Types
-   ========================= */
+import { useCurrentUser } from "../hooks/useCurrentUser";
 
 export type EquipmentRow = {
   id: number;
@@ -14,10 +11,6 @@ export type EquipmentRow = {
   agency: string;
 };
 
-/* =========================
-   Constants
-   ========================= */
-
 const CATEGORY_OPTIONS = [
   "Vehicle",
   "Electronics",
@@ -26,10 +19,6 @@ const CATEGORY_OPTIONS = [
   "Medical",
 ];
 
-/* =========================
-   Component
-   ========================= */
-
 export default function EquipmentTable({
   rows,
   onChange,
@@ -37,6 +26,13 @@ export default function EquipmentTable({
   rows: EquipmentRow[];
   onChange: (rows: EquipmentRow[]) => void;
 }) {
+  const user = useCurrentUser();
+
+  // ✅ Permission logic UNCHANGED
+  const canEdit =
+    user.role === "SystemAdmin" ||
+    user.role === "AgencyAdmin";
+
   const [editingId, setEditingId] = useState<number | null>(null);
 
   function update(
@@ -73,17 +69,17 @@ export default function EquipmentTable({
               borderBottom: "1px solid #e5e7eb",
             }}
           >
-            <th align="left" style={thStyle}>Name</th>
-            <th align="left" style={thStyle}>Category</th>
-            <th align="left" style={thStyle}>Location</th>
-            <th align="left" style={thStyle}>Status</th>
-            <th style={thStyle} />
+            <th style={thStyle}>Name</th>
+            <th style={thStyle}>Category</th>
+            <th style={thStyle}>Location</th>
+            <th style={thStyle}>Status</th>
+            {canEdit && <th style={thStyle} />}
           </tr>
         </thead>
 
         <tbody>
           {rows.map((row) => {
-            const isEditing = editingId === row.id;
+            const isEditing = canEdit && editingId === row.id;
 
             return (
               <tr
@@ -101,16 +97,7 @@ export default function EquipmentTable({
                       style={inputStyle}
                     />
                   ) : (
-                    <Link
-                      to={`/equipment/${row.id}`}
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        color: "#2563eb",
-                        textDecoration: "underline",
-                        fontSize: 14,
-                        cursor: "pointer",
-                      }}
-                    >
+                    <Link to={`/equipment/${row.id}`}>
                       {row.name}
                     </Link>
                   )}
@@ -122,7 +109,11 @@ export default function EquipmentTable({
                     <select
                       value={row.category}
                       onChange={(e) =>
-                        update(row.id, "category", e.target.value)
+                        update(
+                          row.id,
+                          "category",
+                          e.target.value
+                        )
                       }
                       style={inputStyle}
                     >
@@ -143,7 +134,11 @@ export default function EquipmentTable({
                     <input
                       value={row.location}
                       onChange={(e) =>
-                        update(row.id, "location", e.target.value)
+                        update(
+                          row.id,
+                          "location",
+                          e.target.value
+                        )
                       }
                       style={inputStyle}
                     />
@@ -152,13 +147,6 @@ export default function EquipmentTable({
                       to={`/locations?location=${encodeURIComponent(
                         row.location
                       )}`}
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        color: "#2563eb",
-                        textDecoration: "underline",
-                        fontSize: 14,
-                        cursor: "pointer",
-                      }}
                     >
                       {row.location}
                     </Link>
@@ -171,12 +159,18 @@ export default function EquipmentTable({
                     <select
                       value={row.status}
                       onChange={(e) =>
-                        update(row.id, "status", e.target.value)
+                        update(
+                          row.id,
+                          "status",
+                          e.target.value
+                        )
                       }
                       style={inputStyle}
                     >
                       <option value="Active">Active</option>
-                      <option value="Maintenance">Maintenance</option>
+                      <option value="Maintenance">
+                        Maintenance
+                      </option>
                       <option value="Decommissioned">
                         Decommissioned
                       </option>
@@ -187,23 +181,19 @@ export default function EquipmentTable({
                 </td>
 
                 {/* Actions */}
-                <td style={tdStyle}>
-                  {isEditing ? (
-                    <button
-                      onClick={() => setEditingId(null)}
-                      style={buttonStyle}
-                    >
-                      Save
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setEditingId(row.id)}
-                      style={buttonStyle}
-                    >
-                      Edit
-                    </button>
-                  )}
-                </td>
+                {canEdit && (
+                  <td style={tdStyle}>
+                    {isEditing ? (
+                      <button onClick={() => setEditingId(null)}>
+                        Save
+                      </button>
+                    ) : (
+                      <button onClick={() => setEditingId(row.id)}>
+                        Edit
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             );
           })}
@@ -222,14 +212,12 @@ const thStyle: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
   borderRight: "1px solid #e5e7eb",
-  whiteSpace: "nowrap",
 };
 
 const tdStyle: React.CSSProperties = {
   padding: "10px 12px",
   fontSize: 14,
   borderRight: "1px solid #f3f4f6",
-  verticalAlign: "middle",
 };
 
 const inputStyle: React.CSSProperties = {
@@ -238,12 +226,6 @@ const inputStyle: React.CSSProperties = {
   fontSize: 14,
   borderRadius: 6,
   border: "1px solid #d1d5db",
-};
-
-const buttonStyle: React.CSSProperties = {
-  padding: "4px 12px",
-  fontSize: 13,
-  borderRadius: 6,
 };
 
 /* =========================
@@ -255,22 +237,19 @@ function StatusPill({
 }: {
   status: EquipmentRow["status"];
 }) {
-  const colors: Record<
-    EquipmentRow["status"],
-    { bg: string; fg: string }
-  > = {
+  const colors = {
     Active: { bg: "#dcfce7", fg: "#166534" },
     Maintenance: { bg: "#fef3c7", fg: "#92400e" },
     Decommissioned: { bg: "#fee2e2", fg: "#991b1b" },
-  };
+  }[status];
 
   return (
     <span
       style={{
         padding: "4px 8px",
         borderRadius: 999,
-        background: colors[status].bg,
-        color: colors[status].fg,
+        background: colors.bg,
+        color: colors.fg,
         fontSize: 12,
         fontWeight: 600,
       }}

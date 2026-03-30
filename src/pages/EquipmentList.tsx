@@ -1,5 +1,9 @@
 import { useMemo, useState } from "react";
-import { useSearchParams, useLocation } from "react-router-dom";
+import {
+  useSearchParams,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import {
   filterVisibleEquipment,
@@ -19,6 +23,7 @@ type Status = "Active" | "Maintenance" | "Decommissioned";
 
 export default function EquipmentList() {
   const user = useCurrentUser();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
 
@@ -29,8 +34,16 @@ export default function EquipmentList() {
     useState<EquipmentRow[]>(EQUIPMENT);
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<Status | "">("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] =
+    useState<Status | "">("");
+  const [categoryFilter, setCategoryFilter] =
+    useState("");
+
+  const canExport =
+    user.role === "SystemAdmin" ||
+    user.role === "AgencyAdmin" ||
+    user.role === "AgencyReporter" ||
+    user.role === "GlobalViewer";
 
   const visibleEquipment = useMemo(
     () => filterVisibleEquipment(user, equipment),
@@ -91,7 +104,39 @@ export default function EquipmentList() {
     <div>
       <h1>{pageTitle}</h1>
 
-      {/* ✅ Search & filters (restored) */}
+      {/* ✅ Actions row (export restored) */}
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          marginBottom: 12,
+          alignItems: "center",
+        }}
+      >
+        {canExport && (
+          <button
+            onClick={() =>
+              exportEquipmentCsv(
+                filteredEquipment,
+                "equipment.csv"
+              )
+            }
+          >
+            Export CSV
+          </button>
+        )}
+
+        {(user.role === "SystemAdmin" ||
+          user.role === "AgencyAdmin") && (
+          <button
+            onClick={() => navigate("/equipment/new")}
+          >
+            Add Equipment
+          </button>
+        )}
+      </div>
+
+      {/* Search + filters */}
       <div
         style={{
           display: "flex",
@@ -110,39 +155,36 @@ export default function EquipmentList() {
         <select
           value={statusFilter}
           onChange={(e) =>
-            setStatusFilter(e.target.value as Status | "")
+            setStatusFilter(
+              e.target.value as Status | ""
+            )
           }
         >
           <option value="">All Statuses</option>
           <option value="Active">Active</option>
-          <option value="Maintenance">Maintenance</option>
-          <option value="Decommissioned">Decommissioned</option>
+          <option value="Maintenance">
+            Maintenance
+          </option>
+          <option value="Decommissioned">
+            Decommissioned
+          </option>
         </select>
 
         <select
           value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-        >
-          <option value="">All Categories</option>
-          {[...new Set(equipment.map((e) => e.category))].map(
-            (category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            )
-          )}
-        </select>
-
-        <button
-          onClick={() =>
-            exportEquipmentCsv(
-              filteredEquipment,
-              "equipment.csv"
-            )
+          onChange={(e) =>
+            setCategoryFilter(e.target.value)
           }
         >
-          Export CSV
-        </button>
+          <option value="">All Categories</option>
+          {[...new Set(
+            equipment.map((e) => e.category)
+          )].map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
       </div>
 
       <EquipmentTable
