@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
+import { filterVisibleEquipment } from "../utils/visibility";
 import EquipmentTable from "../components/EquipmentTable";
 import type { EquipmentRow } from "../components/EquipmentTable";
 
@@ -38,6 +39,14 @@ const ALL_EQUIPMENT: EquipmentRow[] = [
     status: "Decommissioned",
     agency: "Fire Dept",
   },
+  {
+    id: 5,
+    name: "Medical Kit Alpha",
+    category: "Medical",
+    location: "Station 3",
+    status: "Active",
+    agency: "EMS",
+  },
 ];
 
 export default function Dashboard() {
@@ -51,11 +60,8 @@ export default function Dashboard() {
   const [category, setCategory] = useState("");
 
   const visibleEquipment = useMemo(
-    () =>
-      equipment.filter(
-        (e) => e.agency === user.agency
-      ),
-    [equipment, user.agency]
+    () => filterVisibleEquipment(user, equipment),
+    [user, equipment]
   );
 
   const filtered = useMemo(() => {
@@ -120,72 +126,71 @@ export default function Dashboard() {
           variant="Decommissioned"
         />
       </div>
-{/* =========================
-    Filters (IMPROVED SIZE)
-   ========================= */}
-<div
-  style={{
-    display: "flex",
-    gap: 12,
-    marginBottom: 16,
-    flexWrap: "wrap",
-  }}
->
-  <input
-    type="text"
-    placeholder="Search by name…"
-    value={query}
-    onChange={(e) => setQuery(e.target.value)}
-    style={{
-      height: 38,
-      padding: "8px 12px",
-      fontSize: 14,
-      borderRadius: 6,
-      border: "1px solid #d1d5db",
-      minWidth: 260,
-    }}
-  />
 
-  <select
-    value={status}
-    onChange={(e) =>
-      setStatus(e.target.value as Status | "")
-    }
-    style={{
-      height: 38,
-      padding: "8px 12px",
-      fontSize: 14,
-      borderRadius: 6,
-      border: "1px solid #d1d5db",
-      minWidth: 260,
-    }}
-  >
-    <option value="">All Statuses</option>
-    <option value="Active">Active</option>
-    <option value="Maintenance">Maintenance</option>
-    <option value="Decommissioned">
-      Decommissioned
-    </option>
-  </select>
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          marginBottom: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search by name…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={{
+            height: 38,
+            padding: "8px 12px",
+            fontSize: 14,
+            borderRadius: 6,
+            border: "1px solid #d1d5db",
+            minWidth: 260,
+          }}
+        />
 
-  <select
-    value={category}
-    onChange={(e) => setCategory(e.target.value)}
-    style={{
-      height: 38,
-      padding: "8px 12px",
-      fontSize: 14,
-      borderRadius: 6,
-      border: "1px solid #d1d5db",
-      minWidth: 260,
-    }}
-  >
-    <option value="">All Categories</option>
-    <option value="Vehicle">Vehicle</option>
-    <option value="Electronics">Electronics</option>
-    <option value="Trailer">Trailer</option>
-  </select>
-</div>
+        <select
+          value={status}
+          onChange={(e) =>
+            setStatus(e.target.value as Status | "")
+          }
+          style={{
+            height: 38,
+            padding: "8px 12px",
+            fontSize: 14,
+            borderRadius: 6,
+            border: "1px solid #d1d5db",
+            minWidth: 260,
+          }}
+        >
+          <option value="">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Maintenance">Maintenance</option>
+          <option value="Decommissioned">
+            Decommissioned
+          </option>
+        </select>
+
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          style={{
+            height: 38,
+            padding: "8px 12px",
+            fontSize: 14,
+            borderRadius: 6,
+            border: "1px solid #d1d5db",
+            minWidth: 260,
+          }}
+        >
+          <option value="">All Categories</option>
+          <option value="Vehicle">Vehicle</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Trailer">Trailer</option>
+          <option value="Medical">Medical</option>
+        </select>
+      </div>
 
       <EquipmentTable
         rows={filtered.slice(0, 5)}

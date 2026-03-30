@@ -1,10 +1,15 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useCurrentUser } from "../hooks/useCurrentUser";
+import {
+  filterVisibleEquipment,
+  canSeeAllAgencies,
+} from "../utils/visibility";
 import EquipmentTable from "../components/EquipmentTable";
 import type { EquipmentRow } from "../components/EquipmentTable";
 
 /* =========================
-   Mock data (same style as before)
+   Mock data
    ========================= */
 
 const ALL_EQUIPMENT: EquipmentRow[] = [
@@ -32,6 +37,14 @@ const ALL_EQUIPMENT: EquipmentRow[] = [
     status: "Decommissioned",
     agency: "Fire Dept",
   },
+  {
+    id: 4,
+    name: "Medical Kit Alpha",
+    category: "Medical",
+    location: "Station 3",
+    status: "Active",
+    agency: "EMS",
+  },
 ];
 
 /* =========================
@@ -40,25 +53,44 @@ const ALL_EQUIPMENT: EquipmentRow[] = [
 
 export default function EquipmentList() {
   const user = useCurrentUser();
+  const [searchParams] = useSearchParams();
+
+  const selectedLocation = searchParams.get("location");
 
   const [equipment, setEquipment] =
     useState<EquipmentRow[]>(ALL_EQUIPMENT);
 
-  // ✅ Organization-bound visibility only (stable behavior)
   const visibleEquipment = useMemo(
-    () =>
-      equipment.filter(
-        (e) => e.agency === user.agency
-      ),
-    [equipment, user.agency]
+    () => filterVisibleEquipment(user, equipment),
+    [user, equipment]
   );
+
+  const filteredEquipment = useMemo(() => {
+    if (!selectedLocation) {
+      return visibleEquipment;
+    }
+
+    return visibleEquipment.filter(
+      (e) => e.location === selectedLocation
+    );
+  }, [visibleEquipment, selectedLocation]);
+
+  const pageTitle = useMemo(() => {
+    if (selectedLocation) {
+      return `Equipment at ${selectedLocation}`;
+    }
+
+    return canSeeAllAgencies(user)
+      ? "All Equipment"
+      : "My Equipment";
+  }, [selectedLocation, user]);
 
   return (
     <div>
-      <h1>My Equipment</h1>
+      <h1>{pageTitle}</h1>
 
       <EquipmentTable
-        rows={visibleEquipment}
+        rows={filteredEquipment}
         onChange={setEquipment}
       />
     </div>

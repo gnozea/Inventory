@@ -101,7 +101,18 @@ export default function EquipmentTable({
                       style={inputStyle}
                     />
                   ) : (
-                    row.name
+                    <Link
+                      to={`/equipment/${row.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        color: "#2563eb",
+                        textDecoration: "underline",
+                        fontSize: 14,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {row.name}
+                    </Link>
                   )}
                 </td>
 
@@ -126,7 +137,7 @@ export default function EquipmentTable({
                   )}
                 </td>
 
-                {/* ✅ Location — Correct Route */}
+                {/* Location */}
                 <td style={tdStyle}>
                   {isEditing ? (
                     <input
@@ -138,7 +149,7 @@ export default function EquipmentTable({
                     />
                   ) : (
                     <Link
-                      to={`/app/locations?location=${encodeURIComponent(
+                      to={`/locations?location=${encodeURIComponent(
                         row.location
                       )}`}
                       onClick={(e) => e.stopPropagation()}
