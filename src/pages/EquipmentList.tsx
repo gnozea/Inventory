@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import {
   filterVisibleEquipment,
@@ -8,57 +8,29 @@ import {
 import EquipmentTable from "../components/EquipmentTable";
 import type { EquipmentRow } from "../components/EquipmentTable";
 
-/* =========================
-   Mock data
-   ========================= */
-
-const ALL_EQUIPMENT: EquipmentRow[] = [
-  {
-    id: 1,
-    name: "Rescue Truck 1",
-    category: "Vehicle",
-    location: "Station 1",
-    status: "Active",
-    agency: "Fire Dept",
-  },
-  {
-    id: 2,
-    name: "Thermal Camera",
-    category: "Electronics",
-    location: "Station 2",
-    status: "Maintenance",
-    agency: "Fire Dept",
-  },
-  {
-    id: 3,
-    name: "HazMat Trailer",
-    category: "Trailer",
-    location: "Depot",
-    status: "Decommissioned",
-    agency: "Fire Dept",
-  },
-  {
-    id: 4,
-    name: "Medical Kit Alpha",
-    category: "Medical",
-    location: "Station 3",
-    status: "Active",
-    agency: "EMS",
-  },
-];
+import { EQUIPMENT } from "../utils/equipment";
+import exportEquipmentCsv from "../utils/exportEquipmentCsv";
 
 /* =========================
    Page
    ========================= */
 
+type Status = "Active" | "Maintenance" | "Decommissioned";
+
 export default function EquipmentList() {
   const user = useCurrentUser();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
 
   const selectedLocation = searchParams.get("location");
+  const isLocationsView = location.pathname === "/locations";
 
   const [equipment, setEquipment] =
-    useState<EquipmentRow[]>(ALL_EQUIPMENT);
+    useState<EquipmentRow[]>(EQUIPMENT);
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<Status | "">("");
+  const [categoryFilter, setCategoryFilter] = useState("");
 
   const visibleEquipment = useMemo(
     () => filterVisibleEquipment(user, equipment),
@@ -66,14 +38,44 @@ export default function EquipmentList() {
   );
 
   const filteredEquipment = useMemo(() => {
-    if (!selectedLocation) {
-      return visibleEquipment;
+    let rows = visibleEquipment.filter((e) => {
+      const matchesLocation =
+        !selectedLocation || e.location === selectedLocation;
+
+      const matchesSearch =
+        !search ||
+        e.name.toLowerCase().includes(search.toLowerCase()) ||
+        e.location.toLowerCase().includes(search.toLowerCase());
+
+      const matchesStatus =
+        !statusFilter || e.status === statusFilter;
+
+      const matchesCategory =
+        !categoryFilter || e.category === categoryFilter;
+
+      return (
+        matchesLocation &&
+        matchesSearch &&
+        matchesStatus &&
+        matchesCategory
+      );
+    });
+
+    if (isLocationsView && !selectedLocation) {
+      rows = [...rows].sort((a, b) =>
+        a.location.localeCompare(b.location)
+      );
     }
 
-    return visibleEquipment.filter(
-      (e) => e.location === selectedLocation
-    );
-  }, [visibleEquipment, selectedLocation]);
+    return rows;
+  }, [
+    visibleEquipment,
+    selectedLocation,
+    search,
+    statusFilter,
+    categoryFilter,
+    isLocationsView,
+  ]);
 
   const pageTitle = useMemo(() => {
     if (selectedLocation) {
@@ -88,6 +90,60 @@ export default function EquipmentList() {
   return (
     <div>
       <h1>{pageTitle}</h1>
+
+      {/* ✅ Search & filters (restored) */}
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          marginBottom: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search by name or location…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <select
+          value={statusFilter}
+          onChange={(e) =>
+            setStatusFilter(e.target.value as Status | "")
+          }
+        >
+          <option value="">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Maintenance">Maintenance</option>
+          <option value="Decommissioned">Decommissioned</option>
+        </select>
+
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+        >
+          <option value="">All Categories</option>
+          {[...new Set(equipment.map((e) => e.category))].map(
+            (category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            )
+          )}
+        </select>
+
+        <button
+          onClick={() =>
+            exportEquipmentCsv(
+              filteredEquipment,
+              "equipment.csv"
+            )
+          }
+        >
+          Export CSV
+        </button>
+      </div>
 
       <EquipmentTable
         rows={filteredEquipment}

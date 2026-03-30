@@ -1,132 +1,91 @@
 import { useMemo, useState } from "react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
-import { filterVisibleEquipment } from "../utils/visibility";
 import EquipmentTable from "../components/EquipmentTable";
 import type { EquipmentRow } from "../components/EquipmentTable";
+import { filterVisibleEquipment } from "../utils/visibility";
+import { EQUIPMENT } from "../utils/equipment";
 
 type Status = "Active" | "Maintenance" | "Decommissioned";
-
-const ALL_EQUIPMENT: EquipmentRow[] = [
-  {
-    id: 1,
-    name: "Rescue Truck 1",
-    category: "Vehicle",
-    location: "Station 1",
-    status: "Active",
-    agency: "Fire Dept",
-  },
-  {
-    id: 2,
-    name: "Thermal Camera",
-    category: "Electronics",
-    location: "Station 2",
-    status: "Maintenance",
-    agency: "Fire Dept",
-  },
-  {
-    id: 3,
-    name: "Mobile Command Unit",
-    category: "Vehicle",
-    location: "HQ",
-    status: "Active",
-    agency: "Fire Dept",
-  },
-  {
-    id: 4,
-    name: "HazMat Trailer",
-    category: "Trailer",
-    location: "Depot",
-    status: "Decommissioned",
-    agency: "Fire Dept",
-  },
-  {
-    id: 5,
-    name: "Medical Kit Alpha",
-    category: "Medical",
-    location: "Station 3",
-    status: "Active",
-    agency: "EMS",
-  },
-];
 
 export default function Dashboard() {
   const user = useCurrentUser();
 
   const [equipment, setEquipment] =
-    useState<EquipmentRow[]>(ALL_EQUIPMENT);
+    useState<EquipmentRow[]>(EQUIPMENT);
 
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<Status | "">("");
-  const [category, setCategory] = useState("");
+  /* ✅ Restored filters */
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<Status | "">("");
+  const [categoryFilter, setCategoryFilter] = useState("");
 
+  /* ✅ Existing visibility logic */
   const visibleEquipment = useMemo(
     () => filterVisibleEquipment(user, equipment),
     [user, equipment]
   );
 
-  const filtered = useMemo(() => {
+  /* ✅ Restored filtering */
+  const filteredEquipment = useMemo(() => {
     return visibleEquipment.filter((e) => {
-      const matchesQuery =
-        query === "" ||
-        e.name.toLowerCase().includes(query.toLowerCase());
+      const matchesSearch =
+        !search ||
+        e.name.toLowerCase().includes(search.toLowerCase()) ||
+        e.location.toLowerCase().includes(search.toLowerCase());
 
       const matchesStatus =
-        status === "" || e.status === status;
+        !statusFilter || e.status === statusFilter;
 
       const matchesCategory =
-        category === "" || e.category === category;
+        !categoryFilter || e.category === categoryFilter;
 
-      return (
-        matchesQuery &&
-        matchesStatus &&
-        matchesCategory
-      );
+      return matchesSearch && matchesStatus && matchesCategory;
     });
-  }, [visibleEquipment, query, status, category]);
+  }, [visibleEquipment, search, statusFilter, categoryFilter]);
 
+  /* ✅ Restored metrics */
   const metrics = useMemo(() => {
     return {
-      total: filtered.length,
-      active: filtered.filter((e) => e.status === "Active").length,
-      maintenance: filtered.filter(
+      total: filteredEquipment.length,
+      active: filteredEquipment.filter(
+        (e) => e.status === "Active"
+      ).length,
+      maintenance: filteredEquipment.filter(
         (e) => e.status === "Maintenance"
       ).length,
-      decommissioned: filtered.filter(
+      decommissioned: filteredEquipment.filter(
         (e) => e.status === "Decommissioned"
       ).length,
     };
-  }, [filtered]);
+  }, [filteredEquipment]);
 
   return (
     <div>
       <h1>Dashboard</h1>
 
+      {/* ✅ Status cards with colors */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
           gap: 16,
-          marginBottom: 24,
+          marginBottom: 20,
         }}
       >
         <Metric label="Total" value={metrics.total} />
-        <Metric
-          label="Active"
-          value={metrics.active}
-          variant="Active"
-        />
+        <Metric label="Active" value={metrics.active} variant="active" />
         <Metric
           label="Maintenance"
           value={metrics.maintenance}
-          variant="Maintenance"
+          variant="maintenance"
         />
         <Metric
           label="Decommissioned"
           value={metrics.decommissioned}
-          variant="Decommissioned"
+          variant="decommissioned"
         />
       </div>
 
+      {/* ✅ Restored search + filters */}
       <div
         style={{
           display: "flex",
@@ -137,68 +96,50 @@ export default function Dashboard() {
       >
         <input
           type="text"
-          placeholder="Search by name…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          style={{
-            height: 38,
-            padding: "8px 12px",
-            fontSize: 14,
-            borderRadius: 6,
-            border: "1px solid #d1d5db",
-            minWidth: 260,
-          }}
+          placeholder="Search by name or location…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ padding: "8px 12px", minWidth: 240 }}
         />
 
         <select
-          value={status}
+          value={statusFilter}
           onChange={(e) =>
-            setStatus(e.target.value as Status | "")
+            setStatusFilter(e.target.value as Status | "")
           }
-          style={{
-            height: 38,
-            padding: "8px 12px",
-            fontSize: 14,
-            borderRadius: 6,
-            border: "1px solid #d1d5db",
-            minWidth: 260,
-          }}
         >
           <option value="">All Statuses</option>
           <option value="Active">Active</option>
           <option value="Maintenance">Maintenance</option>
-          <option value="Decommissioned">
-            Decommissioned
-          </option>
+          <option value="Decommissioned">Decommissioned</option>
         </select>
 
         <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          style={{
-            height: 38,
-            padding: "8px 12px",
-            fontSize: 14,
-            borderRadius: 6,
-            border: "1px solid #d1d5db",
-            minWidth: 260,
-          }}
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
         >
           <option value="">All Categories</option>
-          <option value="Vehicle">Vehicle</option>
-          <option value="Electronics">Electronics</option>
-          <option value="Trailer">Trailer</option>
-          <option value="Medical">Medical</option>
+          {[...new Set(equipment.map((e) => e.category))].map(
+            (category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            )
+          )}
         </select>
       </div>
 
       <EquipmentTable
-        rows={filtered.slice(0, 5)}
+        rows={filteredEquipment.slice(0, 5)}
         onChange={setEquipment}
       />
     </div>
   );
 }
+
+/* =========================
+   Metric card
+   ========================= */
 
 function Metric({
   label,
@@ -207,18 +148,15 @@ function Metric({
 }: {
   label: string;
   value: number;
-  variant?: Status;
+  variant?: "active" | "maintenance" | "decommissioned";
 }) {
-  const styles: Record<
-    Status,
-    { bg: string; fg: string }
-  > = {
-    Active: { bg: "#dcfce7", fg: "#166534" },
-    Maintenance: { bg: "#fef3c7", fg: "#92400e" },
-    Decommissioned: { bg: "#fee2e2", fg: "#991b1b" },
+  const colors = {
+    active: { bg: "#dcfce7", fg: "#166534" },
+    maintenance: { bg: "#fef3c7", fg: "#92400e" },
+    decommissioned: { bg: "#fee2e2", fg: "#991b1b" },
   };
 
-  const style = variant ? styles[variant] : null;
+  const style = variant ? colors[variant] : null;
 
   return (
     <div
@@ -226,20 +164,11 @@ function Metric({
         padding: 16,
         borderRadius: 6,
         background: style ? style.bg : "#f3f4f6",
+        color: style ? style.fg : "#111827",
       }}
     >
-      <div style={{ fontSize: 13, opacity: 0.8 }}>
-        {label}
-      </div>
-      <div
-        style={{
-          fontSize: 32,
-          fontWeight: 800,
-          color: style ? style.fg : "#111827",
-        }}
-      >
-        {value}
-      </div>
+      <div style={{ fontSize: 12, opacity: 0.7 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 700 }}>{value}</div>
     </div>
   );
 }

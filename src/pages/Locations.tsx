@@ -1,39 +1,8 @@
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 
-type Status = "Active" | "Maintenance" | "Decommissioned";
-
-type Equipment = {
-  id: number;
-  name: string;
-  location: string;
-  status: Status;
-};
-
-/* =========================
-   TEMP mock data
-   (same source as equipment for now)
-   ========================= */
-
-const EQUIPMENT: Equipment[] = [
-  { id: 1, name: "Rescue Truck 1", location: "Station 1", status: "Active" },
-  { id: 2, name: "Thermal Camera", location: "Station 1", status: "Maintenance" },
-  { id: 3, name: "Mobile Command Unit", location: "HQ", status: "Active" },
-  { id: 4, name: "HazMat Trailer", location: "Depot", status: "Decommissioned" },
-  { id: 5, name: "Rescue Boat", location: "Depot", status: "Active" },
-
-  // ✅ ADD THIS RECORD
-  {
-    id: 6,
-    name: "Air Monitoring Kit",
-    location: "Station 1",
-    status: "Decommissioned",
-  },
-];
-
-/* =========================
-   Page
-   ========================= */
+/* ✅ NEW shared data import */
+import { EQUIPMENT } from "../utils/equipment";
 
 export default function Locations() {
   const [params] = useSearchParams();
@@ -76,40 +45,29 @@ export default function Locations() {
       <h1 style={{ fontSize: 24, fontWeight: 600 }}>Locations</h1>
 
       {selectedLocation && (
-        <p style={{ opacity: 0.7, marginBottom: 16 }}>
+        <p style={{ opacity: 0.7 }}>
           Showing results for <strong>{selectedLocation}</strong>
         </p>
       )}
 
-      <table
-        width="100%"
-        cellPadding={0}
-        cellSpacing={0}
-        style={{
-          borderCollapse: "collapse",
-          border: "1px solid #e5e7eb",
-          borderRadius: 10,
-          overflow: "hidden",
-        }}
-      >
+      <table width="100%" cellPadding={8}>
         <thead>
-          <tr style={{ background: "#f9fafb" }}>
-            <th align="left" style={thStyle}>Location</th>
-            <th align="left" style={thStyle}>Total</th>
-            <th align="left" style={thStyle}>Active</th>
-            <th align="left" style={thStyle}>Maintenance</th>
-            <th align="left" style={thStyle}>Decommissioned</th>
+          <tr>
+            <th align="left">Location</th>
+            <th align="left">Total</th>
+            <th align="left">Active</th>
+            <th align="left">Maintenance</th>
+            <th align="left">Decommissioned</th>
           </tr>
         </thead>
-
         <tbody>
           {locations.map((l) => (
-            <tr key={l.name} style={{ borderBottom: "1px solid #f3f4f6" }}>
-              <td style={tdStyle}>{l.name}</td>
-              <td style={tdStyle}>{l.total}</td>
-              <td style={tdStyle}>{l.active}</td>
-              <td style={tdStyle}>{l.maintenance}</td>
-              <td style={tdStyle}>{l.decommissioned}</td>
+            <tr key={l.name}>
+              <td>{l.name}</td>
+              <td>{l.total}</td>
+              <td>{l.active}</td>
+              <td>{l.maintenance}</td>
+              <td>{l.decommissioned}</td>
             </tr>
           ))}
         </tbody>
@@ -117,21 +75,3 @@ export default function Locations() {
     </div>
   );
 }
-
-/* =========================
-   Styles
-   ========================= */
-
-const thStyle: React.CSSProperties = {
-  padding: "12px",
-  fontSize: 13,
-  fontWeight: 600,
-  borderRight: "1px solid #e5e7eb",
-  whiteSpace: "nowrap",
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: "10px 12px",
-  fontSize: 14,
-  borderRight: "1px solid #f3f4f6",
-};

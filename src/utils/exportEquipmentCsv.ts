@@ -1,10 +1,10 @@
-import type { EquipmentItem } from "../types/equipment";
+import type { EquipmentRow } from "../components/EquipmentTable";
 
-export function exportEquipmentCsv(
-  rows: EquipmentItem[],
+export default function exportEquipmentCsv(
+  rows: EquipmentRow[],
   filename = "equipment.csv"
 ) {
-  if (!rows.length) return;
+  if (!rows || rows.length === 0) return;
 
   const headers = Object.keys(rows[0]);
 
@@ -12,12 +12,15 @@ export function exportEquipmentCsv(
     headers.join(","),
     ...rows.map((row) =>
       headers
-        .map((h) => `"${String(row[h as keyof EquipmentItem] ?? "")}"`)
+        .map((h) => `"${String(row[h as keyof EquipmentRow] ?? "")}"`)
         .join(",")
     ),
   ].join("\n");
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([csv], {
+    type: "text/csv;charset=utf-8;",
+  });
+
   const url = URL.createObjectURL(blob);
 
   const link = document.createElement("a");

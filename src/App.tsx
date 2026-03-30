@@ -25,7 +25,8 @@ export default function App() {
         <Route path="/equipment/:id" element={<EquipmentDetail />} />
         <Route path="/equipment/new" element={<AddEquipment />} />
 
-        {/* ✅ Locations → reuse Equipment table */}
+        {/* ✅ Locations — SAME TABLE AS MY EQUIPMENT */}
+        {/* ✅ Sidebar + inline click now behave identically */}
         <Route path="/locations" element={<EquipmentList />} />
 
         {/* Search */}
@@ -51,7 +52,7 @@ export default function App() {
           }
         />
 
-        {/* Catch‑all → Dashboard */}
+        {/* Catch‑all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
