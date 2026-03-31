@@ -5,7 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import EquipmentList from "./pages/EquipmentList";
 import EquipmentDetail from "./pages/EquipmentDetail";
 import AddEquipment from "./pages/AddEquipment";
-import Search from "./pages/Search";
+import GlobalSearch from "./pages/GlobalSearch";
 import Reports from "./pages/Reports";
 import Admin from "./pages/Admin";
 import AccessDenied from "./components/AccessDenied";
@@ -31,15 +31,15 @@ export default function App() {
 
         {/* Search */}
         <Route
-          path="/search"
-          element={
-            user.role === "GlobalViewer" || user.role === "SystemAdmin" ? (
-              <Search />
-            ) : (
-              <AccessDenied />
-            )
-          }
-        />
+  path="/search"
+  element={
+    user.role === "GlobalViewer" || user.role === "SystemAdmin" ? (
+      <GlobalSearch />
+    ) : (
+      <AccessDenied />
+    )
+  }
+/>
 
         {/* Reports */}
         <Route path="/reports" element={<Reports />} />
