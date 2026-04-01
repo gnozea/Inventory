@@ -1,38 +1,85 @@
-import { useCallback, useMemo } from "react";
+import type { UserRole } from "../hooks/useCurrentUser";
 
 type DevUser = {
   id: number;
   name: string;
-  role: "SystemAdmin" | "GlobalViewer" | "AgencyAdmin" | "Editor" | "Reporter";
+  role: UserRole;
   agency: string;
 };
+
+const STORAGE_KEY = "dev_current_user";
 
 const USERS: DevUser[] = [
   { id: 1, name: "Alice Admin", role: "SystemAdmin", agency: "Statewide" },
   { id: 2, name: "Gary Global", role: "GlobalViewer", agency: "Statewide" },
-  { id: 3, name: "Amy Agency", role: "AgencyAdmin", agency: "Fire Dept" },
-  { id: 4, name: "Evan Editor", role: "Editor", agency: "Fire Dept" },
-  { id: 5, name: "Rita Reporter", role: "Reporter", agency: "Fire Dept" },
+  { id: 3, name: "Amy Agency", role: "AgencyAdmin", agency: "Fire Department" },
+  { id: 4, name: "Ulysses User", role: "AgencyUser", agency: "Fire Department" },
+  { id: 5, name: "Rita Reporter", role: "AgencyReporter", agency: "Fire Department" },
 ];
 
-const STORAGE_KEY = "dev_current_user";
+function isUserRole(role: unknown): role is UserRole {
+  return (
+    role === "SystemAdmin" ||
+    role === "GlobalViewer" ||
+    role === "AgencyAdmin" ||
+    role === "AgencyUser" ||
+    role === "AgencyReporter"
+  );
+}
+
+function normalizeStoredUser(raw: string | null): DevUser | null {
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as {
+      id?: unknown;
+      name?: unknown;
+      role?: unknown;
+      agency?: unknown;
+    };
+
+    const legacyRole =
+      parsed.role === "Editor"
+        ? "AgencyUser"
+        : parsed.role === "Reporter"
+        ? "AgencyReporter"
+        : parsed.role;
+
+    if (
+      typeof parsed.id !== "number" ||
+      typeof parsed.name !== "string" ||
+      typeof parsed.agency !== "string" ||
+      !isUserRole(legacyRole)
+    ) {
+      return null;
+    }
+
+    return {
+      id: parsed.id,
+      name: parsed.name,
+      role: legacyRole,
+      agency: parsed.agency,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export default function DevToolbar() {
-  const current = useMemo<DevUser>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
+  const stored = normalizeStoredUser(localStorage.getItem(STORAGE_KEY));
+  const current = stored ?? USERS[0];
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(USERS[0]));
-    return USERS[0];
-  }, []);
+  if (!stored) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+  }
 
-  const changeUser = useCallback((id: number) => {
+  const changeUser = (id: number) => {
     const user = USERS.find((u) => u.id === id);
     if (!user) return;
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     window.location.reload();
-  }, []);
+  };
 
   return (
     <div
