@@ -28,6 +28,9 @@ export default function Layout() {
     isAgencyScopedEditor ||
     isAgencyReporter;
 
+  const canViewSettings =
+    isSystemAdmin || isAgencyAdmin;
+
   return (
     <div
       style={{
@@ -87,7 +90,7 @@ export default function Layout() {
               </NavGroup>
             )}
 
-            {isSystemAdmin && (
+            {canViewSettings && (
               <NavGroup>
                 <NavItem to="/admin">Settings</NavItem>
               </NavGroup>
