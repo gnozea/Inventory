@@ -13,7 +13,7 @@ export function canSeeAllAgencies(user: CurrentUser) {
 
 /**
  * Metadata edit permission (name/category/location/etc.).
- * Status updates are handled separately.
+ * AgencyUser now mirrors AgencyAdmin for own BU.
  */
 export function canEditEquipment(
   user: CurrentUser,
@@ -21,7 +21,10 @@ export function canEditEquipment(
 ) {
   if (user.role === "SystemAdmin") return true;
 
-  if (user.role === "AgencyAdmin") {
+  if (
+    user.role === "AgencyAdmin" ||
+    user.role === "AgencyUser"
+  ) {
     return user.agency === equipmentAgency;
   }
 
@@ -36,6 +39,7 @@ export function filterVisibleEquipment(
   equipment: EquipmentRow[]
 ) {
   if (canSeeAllAgencies(user)) return equipment;
+
   return equipment.filter(
     (e) => e.agency === user.agency
   );

@@ -24,20 +24,26 @@ export default function App() {
   const isAgencyUser = user.role === "AgencyUser";
   const isAgencyReporter = user.role === "AgencyReporter";
 
+  // AgencyUser now mirrors AgencyAdmin
+  const isAgencyScopedEditor = isAgencyAdmin || isAgencyUser;
+
+  const canViewDashboard =
+    isSystemAdmin || isGlobalViewer || isAgencyScopedEditor;
+
   const canViewInventory =
-    isSystemAdmin || isGlobalViewer || isAgencyAdmin;
+    isSystemAdmin || isGlobalViewer || isAgencyScopedEditor;
 
   const canViewEquipmentDetail =
-    canViewInventory || isAgencyUser;
+    canViewInventory;
 
   const canViewReports =
     isSystemAdmin ||
     isGlobalViewer ||
-    isAgencyAdmin ||
+    isAgencyScopedEditor ||
     isAgencyReporter;
 
   const canAddEquipment =
-    isSystemAdmin || isAgencyAdmin;
+    isSystemAdmin || isAgencyScopedEditor;
 
   return (
     <RouterRoutes>
@@ -45,18 +51,14 @@ export default function App() {
         <Route
           path="/"
           element={
-            isSystemAdmin || isGlobalViewer || isAgencyAdmin
-              ? <Dashboard />
-              : <AccessDenied />
+            canViewDashboard ? <Dashboard /> : <AccessDenied />
           }
         />
 
         <Route
           path="/equipment"
           element={
-            canViewInventory
-              ? <EquipmentList />
-              : <AccessDenied />
+            canViewInventory ? <EquipmentList /> : <AccessDenied />
           }
         />
 
@@ -72,18 +74,14 @@ export default function App() {
         <Route
           path="/equipment/new"
           element={
-            canAddEquipment
-              ? <AddEquipment />
-              : <AccessDenied />
+            canAddEquipment ? <AddEquipment /> : <AccessDenied />
           }
         />
 
         <Route
           path="/locations"
           element={
-            canViewInventory
-              ? <EquipmentList />
-              : <AccessDenied />
+            canViewInventory ? <EquipmentList /> : <AccessDenied />
           }
         />
 
@@ -99,18 +97,14 @@ export default function App() {
         <Route
           path="/reports"
           element={
-            canViewReports
-              ? <Reports />
-              : <AccessDenied />
+            canViewReports ? <Reports /> : <AccessDenied />
           }
         />
 
         <Route
           path="/admin"
           element={
-            isSystemAdmin
-              ? <Admin />
-              : <AccessDenied />
+            isSystemAdmin ? <Admin /> : <AccessDenied />
           }
         />
 

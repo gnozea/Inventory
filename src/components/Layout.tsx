@@ -10,15 +10,35 @@ export default function Layout() {
 
   const isSystemAdmin = user.role === "SystemAdmin";
   const isGlobalViewer = user.role === "GlobalViewer";
+  const isAgencyAdmin = user.role === "AgencyAdmin";
+  const isAgencyUser = user.role === "AgencyUser";
+  const isAgencyReporter = user.role === "AgencyReporter";
+
+  const isAgencyScopedEditor = isAgencyAdmin || isAgencyUser;
+
+  const canViewDashboard =
+    isSystemAdmin || isGlobalViewer || isAgencyScopedEditor;
+
+  const canViewInventory =
+    isSystemAdmin || isGlobalViewer || isAgencyScopedEditor;
+
+  const canViewReports =
+    isSystemAdmin ||
+    isGlobalViewer ||
+    isAgencyScopedEditor ||
+    isAgencyReporter;
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* ✅ Top brand bar */}
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <TopBar />
 
-      {/* App body */}
       <div style={{ display: "flex", flex: 1 }}>
-        {/* Sidebar */}
         <aside
           style={{
             width: SIDEBAR_WIDTH,
@@ -30,9 +50,7 @@ export default function Layout() {
             justifyContent: "space-between",
           }}
         >
-          {/* Top section */}
           <div>
-            {/* Agency name */}
             <div
               style={{
                 fontWeight: 700,
@@ -45,15 +63,23 @@ export default function Layout() {
             </div>
 
             <NavGroup>
-              <NavItem to="/">Dashboard</NavItem>
-              <NavItem to="/equipment">My equipment</NavItem>
-              <NavItem to="/locations">Locations</NavItem>
-              <NavItem to="/reports">Reports</NavItem>
-              <NavItem to="/status-updates">Status updates</NavItem>
+              {canViewDashboard && (
+                <NavItem to="/">Dashboard</NavItem>
+              )}
+
+              {canViewInventory && (
+                <>
+                  <NavItem to="/equipment">My equipment</NavItem>
+                  <NavItem to="/locations">Locations</NavItem>
+                </>
+              )}
+
+              {canViewReports && (
+                <NavItem to="/reports">Reports</NavItem>
+              )}
             </NavGroup>
           </div>
 
-          {/* Bottom section */}
           <div>
             {(isGlobalViewer || isSystemAdmin) && (
               <NavGroup>
@@ -69,7 +95,6 @@ export default function Layout() {
           </div>
         </aside>
 
-        {/* Main content */}
         <main
           style={{
             flex: 1,
@@ -81,7 +106,6 @@ export default function Layout() {
         </main>
       </div>
 
-      {/* ✅ Dev toolbar lives OUTSIDE layout flow */}
       <DevToolbar />
     </div>
   );

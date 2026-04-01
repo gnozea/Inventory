@@ -49,10 +49,12 @@ export default function EquipmentList() {
    * Correct role name: "Reporter" (not "AgencyReporter")
    */
   
+
 const canExport =
   user.role === "SystemAdmin" ||
   user.role === "GlobalViewer" ||
   user.role === "AgencyAdmin" ||
+  user.role === "AgencyUser" ||
   user.role === "AgencyReporter";
 
 
@@ -146,13 +148,12 @@ const canExport =
         )}
 
         {(user.role === "SystemAdmin" ||
-          user.role === "AgencyAdmin") && (
-          <button
-            onClick={() => navigate("/equipment/new")}
-          >
-            Add Equipment
-          </button>
-        )}
+  user.role === "AgencyAdmin" ||
+  user.role === "AgencyUser") && (
+  <button onClick={() => navigate("/equipment/new")}>
+    Add Equipment
+  </button>
+)}
       </div>
 
       {/* ✅ Search + filters — unchanged */}
