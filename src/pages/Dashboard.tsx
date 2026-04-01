@@ -13,18 +13,20 @@ export default function Dashboard() {
   const [equipment, setEquipment] =
     useState<EquipmentRow[]>(EQUIPMENT);
 
-  /* ✅ Restored filters */
+  /* ✅ Filters */
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<Status | "">("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] =
+    useState<Status | "">("");
+  const [categoryFilter, setCategoryFilter] =
+    useState("");
 
-  /* ✅ Existing visibility logic */
+  /* ✅ Visibility (roles applied here only) */
   const visibleEquipment = useMemo(
     () => filterVisibleEquipment(user, equipment),
     [user, equipment]
   );
 
-  /* ✅ Restored filtering */
+  /* ✅ Filtering */
   const filteredEquipment = useMemo(() => {
     return visibleEquipment.filter((e) => {
       const matchesSearch =
@@ -42,7 +44,7 @@ export default function Dashboard() {
     });
   }, [visibleEquipment, search, statusFilter, categoryFilter]);
 
-  /* ✅ Restored metrics */
+  /* ✅ Metrics now match table exactly */
   const metrics = useMemo(() => {
     return {
       total: filteredEquipment.length,
@@ -62,7 +64,7 @@ export default function Dashboard() {
     <div>
       <h1>Dashboard</h1>
 
-      {/* ✅ Status cards with colors */}
+      {/* ✅ Metrics */}
       <div
         style={{
           display: "grid",
@@ -85,7 +87,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* ✅ Restored search + filters */}
+      {/* ✅ Search + filters */}
       <div
         style={{
           display: "flex",
@@ -116,7 +118,9 @@ export default function Dashboard() {
 
         <select
           value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
+          onChange={(e) =>
+            setCategoryFilter(e.target.value)
+          }
         >
           <option value="">All Categories</option>
           {[...new Set(equipment.map((e) => e.category))].map(
@@ -129,8 +133,9 @@ export default function Dashboard() {
         </select>
       </div>
 
+      {/* ✅ Table now matches metrics (no slicing) */}
       <EquipmentTable
-        rows={filteredEquipment.slice(0, 5)}
+        rows={filteredEquipment}
         onChange={setEquipment}
       />
     </div>

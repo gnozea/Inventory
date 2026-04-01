@@ -1,4 +1,8 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import {
+  Routes as RouterRoutes,
+  Route,
+  Navigate as RouterNavigate,
+} from "react-router-dom";
 
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -14,47 +18,107 @@ import { useCurrentUser } from "./hooks/useCurrentUser";
 export default function App() {
   const user = useCurrentUser();
 
+  const isSystemAdmin = user.role === "SystemAdmin";
+  const isGlobalViewer = user.role === "GlobalViewer";
+  const isAgencyAdmin = user.role === "AgencyAdmin";
+  const isAgencyUser = user.role === "AgencyUser";
+  const isAgencyReporter = user.role === "AgencyReporter";
+
+  const canViewInventory =
+    isSystemAdmin || isGlobalViewer || isAgencyAdmin;
+
+  const canViewEquipmentDetail =
+    canViewInventory || isAgencyUser;
+
+  const canViewReports =
+    isSystemAdmin ||
+    isGlobalViewer ||
+    isAgencyAdmin ||
+    isAgencyReporter;
+
+  const canAddEquipment =
+    isSystemAdmin || isAgencyAdmin;
+
   return (
-    <Routes>
+    <RouterRoutes>
       <Route element={<Layout />}>
-        {/* Dashboard */}
-        <Route path="/" element={<Dashboard />} />
-
-        {/* Equipment */}
-        <Route path="/equipment" element={<EquipmentList />} />
-        <Route path="/equipment/:id" element={<EquipmentDetail />} />
-        <Route path="/equipment/new" element={<AddEquipment />} />
-
-        {/* ✅ Locations — SAME TABLE AS MY EQUIPMENT */}
-        {/* ✅ Sidebar + inline click now behave identically */}
-        <Route path="/locations" element={<EquipmentList />} />
-
-        {/* Search */}
         <Route
-  path="/search"
-  element={
-    user.role === "GlobalViewer" || user.role === "SystemAdmin" ? (
-      <GlobalSearch />
-    ) : (
-      <AccessDenied />
-    )
-  }
-/>
-
-        {/* Reports */}
-        <Route path="/reports" element={<Reports />} />
-
-        {/* Admin */}
-        <Route
-          path="/admin"
+          path="/"
           element={
-            user.role === "SystemAdmin" ? <Admin /> : <AccessDenied />
+            isSystemAdmin || isGlobalViewer || isAgencyAdmin
+              ? <Dashboard />
+              : <AccessDenied />
           }
         />
 
-        {/* Catch‑all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="/equipment"
+          element={
+            canViewInventory
+              ? <EquipmentList />
+              : <AccessDenied />
+          }
+        />
+
+        <Route
+          path="/equipment/:id"
+          element={
+            canViewEquipmentDetail
+              ? <EquipmentDetail />
+              : <AccessDenied />
+          }
+        />
+
+        <Route
+          path="/equipment/new"
+          element={
+            canAddEquipment
+              ? <AddEquipment />
+              : <AccessDenied />
+          }
+        />
+
+        <Route
+          path="/locations"
+          element={
+            canViewInventory
+              ? <EquipmentList />
+              : <AccessDenied />
+          }
+        />
+
+        <Route
+          path="/search"
+          element={
+            isSystemAdmin || isGlobalViewer
+              ? <GlobalSearch />
+              : <AccessDenied />
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            canViewReports
+              ? <Reports />
+              : <AccessDenied />
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            isSystemAdmin
+              ? <Admin />
+              : <AccessDenied />
+          }
+        />
+
+        <Route
+          path="*"
+          element={<RouterNavigate to="/" replace />}
+        />
       </Route>
-    </Routes>
+    </RouterRoutes>
   );
 }

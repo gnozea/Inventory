@@ -6,10 +6,13 @@ export default function AddEquipment() {
   const user = useCurrentUser();
   const navigate = useNavigate();
 
+  /**
+   * Equipment creation is a privileged action.
+   * Only SystemAdmin and AgencyAdmin are allowed.
+   */
   const canAdd =
     user.role === "SystemAdmin" ||
-    user.role === "AgencyAdmin" ||
-    user.role === "Editor";
+    user.role === "AgencyAdmin";
 
   if (!canAdd) return <AccessDenied />;
 

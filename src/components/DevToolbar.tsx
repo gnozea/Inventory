@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useMemo } from "react";
 
 type DevUser = {
   id: number;
@@ -18,24 +18,21 @@ const USERS: DevUser[] = [
 const STORAGE_KEY = "dev_current_user";
 
 export default function DevToolbar() {
-  const [current, setCurrent] = useState<DevUser>(USERS[0]);
-
-  useEffect(() => {
+  const current = useMemo<DevUser>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setCurrent(JSON.parse(stored));
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(USERS[0]));
-    }
+    if (stored) return JSON.parse(stored);
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(USERS[0]));
+    return USERS[0];
   }, []);
 
-  function changeUser(id: number) {
+  const changeUser = useCallback((id: number) => {
     const user = USERS.find((u) => u.id === id);
     if (!user) return;
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     window.location.reload();
-  }
+  }, []);
 
   return (
     <div
@@ -55,7 +52,6 @@ export default function DevToolbar() {
       }}
     >
       <strong>Dev Mode</strong>
-
       <span>Current role:</span>
 
       <select

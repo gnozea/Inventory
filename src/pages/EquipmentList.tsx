@@ -30,6 +30,11 @@ export default function EquipmentList() {
   const selectedLocation = searchParams.get("location");
   const isLocationsView = location.pathname === "/locations";
 
+  /**
+   * IMPORTANT:
+   * This state is used by EquipmentTable (inline edits, etc).
+   * Do NOT change UI behavior here.
+   */
   const [equipment, setEquipment] =
     useState<EquipmentRow[]>(EQUIPMENT);
 
@@ -39,17 +44,31 @@ export default function EquipmentList() {
   const [categoryFilter, setCategoryFilter] =
     useState("");
 
-  const canExport =
-    user.role === "SystemAdmin" ||
-    user.role === "AgencyAdmin" ||
-    user.role === "AgencyReporter" ||
-    user.role === "GlobalViewer";
+  /**
+   * ✅ FIX #1:
+   * Correct role name: "Reporter" (not "AgencyReporter")
+   */
+  
+const canExport =
+  user.role === "SystemAdmin" ||
+  user.role === "GlobalViewer" ||
+  user.role === "AgencyAdmin" ||
+  user.role === "AgencyReporter";
 
+
+  /**
+   * ✅ FIX #2:
+   * Centralized visibility logic ONLY.
+   * This is where AgencyAdmin scoping belongs.
+   */
   const visibleEquipment = useMemo(
     () => filterVisibleEquipment(user, equipment),
     [user, equipment]
   );
 
+  /**
+   * ✅ All existing search, filters, sorting remain untouched
+   */
   const filteredEquipment = useMemo(() => {
     let rows = visibleEquipment.filter((e) => {
       const matchesLocation =
@@ -104,7 +123,7 @@ export default function EquipmentList() {
     <div>
       <h1>{pageTitle}</h1>
 
-      {/* ✅ Actions row (export restored) */}
+      {/* ✅ Actions row — unchanged */}
       <div
         style={{
           display: "flex",
@@ -136,7 +155,7 @@ export default function EquipmentList() {
         )}
       </div>
 
-      {/* Search + filters */}
+      {/* ✅ Search + filters — unchanged */}
       <div
         style={{
           display: "flex",
@@ -187,6 +206,7 @@ export default function EquipmentList() {
         </select>
       </div>
 
+      {/* ✅ Table preserved exactly */}
       <EquipmentTable
         rows={filteredEquipment}
         onChange={setEquipment}

@@ -1,11 +1,9 @@
-import { useMemo } from "react";
-
 export type UserRole =
   | "SystemAdmin"
   | "GlobalViewer"
   | "AgencyAdmin"
-  | "Editor"
-  | "Reporter";
+  | "AgencyUser"
+  | "AgencyReporter";
 
 export type CurrentUser = {
   id: number;
@@ -17,18 +15,16 @@ export type CurrentUser = {
 const STORAGE_KEY = "dev_current_user";
 
 export function useCurrentUser(): CurrentUser {
-  return useMemo(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
+  const raw = localStorage.getItem(STORAGE_KEY);
 
-    if (!raw) {
-      return {
-        id: 0,
-        name: "Unknown",
-        role: "Reporter",
-        agency: "Unknown",
-      };
-    }
+  if (!raw) {
+    return {
+      id: 0,
+      name: "Unknown",
+      role: "AgencyUser", // ✅ must be a valid UserRole
+      agency: "Unknown",
+    };
+  }
 
-    return JSON.parse(raw) as CurrentUser;
-  }, []);
+  return JSON.parse(raw) as CurrentUser;
 }

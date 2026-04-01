@@ -16,7 +16,6 @@ type Availability = "Available" | "In Use" | "Unavailable";
    Helpers
    ========================= */
 
-/** Heuristic agency → type mapping (no UI change) */
 function getAgencyType(agency: string) {
   const a = agency.toLowerCase();
   if (a.includes("fire")) return "fire";
@@ -55,7 +54,6 @@ export default function GlobalSearch() {
   const [statusFilter, setStatusFilter] = useState<Status | "">("");
   const [categoryFilter, setCategoryFilter] = useState("");
 
-  /* ✅ 300ms debounce */
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchInput.trim().toLowerCase());
@@ -127,7 +125,15 @@ export default function GlobalSearch() {
     console.log(
       `[GlobalSearch] user=${user.role} results=${results.length} agencies=${agencyCount} query="${debouncedSearch}"`
     );
-  }, [debouncedSearch, agencyFilter, statusFilter, categoryFilter, results, agencyCount, user.role]);
+  }, [
+    debouncedSearch,
+    agencyFilter,
+    statusFilter,
+    categoryFilter,
+    results,
+    agencyCount,
+    user.role,
+  ]);
 
   /* =========================
      Render
@@ -137,7 +143,6 @@ export default function GlobalSearch() {
     <div style={{ padding: 24 }}>
       <h1>Global Search</h1>
 
-      {/* Read-only banner */}
       <div
         style={{
           marginBottom: 16,
@@ -151,7 +156,6 @@ export default function GlobalSearch() {
         agencies without editing.
       </div>
 
-      {/* Search */}
       <input
         type="text"
         placeholder="Search equipment by name…"
@@ -166,7 +170,6 @@ export default function GlobalSearch() {
         }}
       />
 
-      {/* Filters */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
         <select value={agencyFilter} onChange={e => setAgencyFilter(e.target.value)}>
           <option value="">All Agencies</option>
@@ -189,22 +192,18 @@ export default function GlobalSearch() {
           ))}
         </select>
 
-        <button
-          onClick={() => exportEquipmentCsv(results, "global-search.csv")}
-        >
+        <button onClick={() => exportEquipmentCsv(results, "global-search.csv")}>
           Export CSV
         </button>
       </div>
 
-      {/* Results summary */}
       <p style={{ fontSize: 13, marginBottom: 8 }}>
         <strong>{results.length}</strong> results across{" "}
         <strong>{agencyCount}</strong> agencies
       </p>
 
-      {/* Table (unchanged UI) */}
       <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #e5e7eb" }}>
-        <table width="100%" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse" }}>
+        <table width="100%" style={{ borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#f9fafb" }}>
               <th style={thStyle}>Equipment</th>
@@ -228,11 +227,7 @@ export default function GlobalSearch() {
                     type={getAgencyType(r.agency)}
                   />
                 </td>
-                <td style={tdStyle}>
-                  <Link to={`/locations?location=${encodeURIComponent(r.location)}`}>
-                    {r.location}
-                  </Link>
-                </td>
+                <td style={tdStyle}>{r.location}</td>
                 <td style={tdStyle}>
                   <AvailabilityBadge
                     value={availabilityFromStatus(r.status)}
@@ -251,7 +246,7 @@ export default function GlobalSearch() {
 }
 
 /* =========================
-   Styles + Pills (unchanged)
+   Styles + Pills
    ========================= */
 
 const thStyle: React.CSSProperties = {
@@ -311,3 +306,4 @@ function AgencyPill({
     </span>
   );
 }
+
