@@ -24,7 +24,7 @@ export interface CurrentUser {
   id: string;
   name: string;
   role: UserRole;
-  agency: string;       // backward compatible
+  agency: string;
   agencyId: string;
   businessUnitId: string;
 }
@@ -45,7 +45,7 @@ interface SystemUser {
   cr865_contact?: {
     contactid: string;
     fullname: string;
-    parentcustomerid?: {
+    accountid?: {
       accountid: string;
       name: string;
     };
@@ -94,8 +94,8 @@ export function useCurrentUser(): CurrentUser {
           `&$expand=` +
             `systemuserroles_association($select=name),` +
             `cr865_contact(` +
-              `$select=contactid,fullname;` +
-              `$expand=parentcustomerid($select=accountid,name)` +
+              `$select=contactid,fullname,accountid;` +
+              `$expand=accountid($select=accountid,name)` +
             `)`
       );
 
@@ -112,14 +112,14 @@ export function useCurrentUser(): CurrentUser {
         id: user.systemuserid,
         name: user.fullname,
         role,
-        agency: user.cr865_contact?.parentcustomerid?.name ?? "Unknown",
-        agencyId: user.cr865_contact?.parentcustomerid?.accountid ?? "",
+        agency: user.cr865_contact?.accountid?.name ?? "Unknown",
+        agencyId: user.cr865_contact?.accountid?.accountid ?? "",
         businessUnitId: user._businessunitid_value,
       };
     },
   });
 
-  // ✅ Always return a CurrentUser (prevents TS2355 and runtime crashes)
+  // Always return a CurrentUser
   return (
     data ?? {
       id: "loading",
