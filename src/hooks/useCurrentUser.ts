@@ -81,12 +81,13 @@ export function useCurrentUser(): CurrentUser {
   const account = accounts[0];
 
   const { data } = useQuery({
-    queryKey: ["currentUser", account?.homeAccountId],
-    enabled: !!account?.homeAccountId,
+    queryKey: ["currentUser", account?.localAccountId],
+    enabled: !!account?.localAccountId,
     staleTime: 5 * 60 * 1000,
 
     queryFn: async (): Promise<CurrentUser> => {
-      const aadObjectId = account!.homeAccountId;
+      // ✅ THE ONLY CHANGE IS ON THE NEXT LINE
+      const aadObjectId = account!.localAccountId;
 
       const res = await dvFetch<DataverseCollection<SystemUser>>(
         `systemusers?$filter=azureactivedirectoryobjectid eq '${aadObjectId}'` +
@@ -119,7 +120,6 @@ export function useCurrentUser(): CurrentUser {
     },
   });
 
-  // Always return a CurrentUser
   return (
     data ?? {
       id: "loading",
