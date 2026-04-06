@@ -1,148 +1,157 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import DevToolbar from "./DevToolbar";
 import TopBar from "./TopBar";
 
-const SIDEBAR_WIDTH = 180;
+const SIDEBAR_WIDTH = 220;
 
 export default function Layout() {
+  const { inProgress, instance } = useMsal();
+  const isAuthenticated = useIsAuthenticated();
   const user = useCurrentUser();
 
-  const isSystemAdmin = user.role === "SystemAdmin";
-  const isGlobalViewer = user.role === "GlobalViewer";
-  const isAgencyAdmin = user.role === "AgencyAdmin";
-  const isAgencyUser = user.role === "AgencyUser";
-  const isAgencyReporter = user.role === "AgencyReporter";
+  if (inProgress === "startup" || inProgress === "handleRedirect") {
+    return (
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        height: "100vh", background: "#f9fafb", color: "#6b7280", fontSize: 14,
+      }}>
+        Loading…
+      </div>
+    );
+  }
 
-  const isAgencyScopedEditor = isAgencyAdmin || isAgencyUser;
-
-  const canViewDashboard =
-    isSystemAdmin || isGlobalViewer || isAgencyScopedEditor;
-
-  const canViewInventory =
-    isSystemAdmin || isGlobalViewer || isAgencyScopedEditor;
-
-  const canViewReports =
-    isSystemAdmin ||
-    isGlobalViewer ||
-    isAgencyScopedEditor ||
-    isAgencyReporter;
-
-  const canViewSettings =
-    isSystemAdmin || isAgencyAdmin;
-
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <TopBar />
-
-      <div style={{ display: "flex", flex: 1 }}>
-        <aside
+  if (!isAuthenticated && inProgress === "none") {
+    return (
+      <div style={{
+        display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", height: "100vh", gap: 16, background: "#f9fafb",
+      }}>
+        <div style={{
+          width: 56, height: 56, background: "#0f172a", borderRadius: 12,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 22, fontWeight: 700, color: "#fff",
+        }}>ER</div>
+        <h2 style={{ margin: 0, fontSize: 20, color: "#0f172a" }}>
+          Emergency Response Equipment Portal
+        </h2>
+        <p style={{ color: "#6b7280", margin: 0, fontSize: 14 }}>
+          East-West Gateway Council of Governments
+        </p>
+        <button
+          onClick={() => instance.loginPopup({
+            scopes: [`${import.meta.env.VITE_DATAVERSE_URL}/.default`],
+          })}
           style={{
-            width: SIDEBAR_WIDTH,
-            background: "#f7f7f3",
-            borderRight: "1px solid #e5e7eb",
-            padding: "16px 12px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
+            marginTop: 8, padding: "10px 32px", fontSize: 14,
+            cursor: "pointer", borderRadius: 8, border: "none",
+            background: "#0f172a", color: "#fff", fontWeight: 600,
           }}
         >
-          <div>
-            <div
-              style={{
-                fontWeight: 700,
-                fontSize: 12,
-                letterSpacing: 0.5,
-                marginBottom: 16,
-              }}
-            >
-              {user.agency.toUpperCase()}
+          Sign in with Microsoft
+        </button>
+      </div>
+    );
+  }
+
+  const isSystemAdmin    = user.role === "SystemAdmin";
+  const isGlobalViewer   = user.role === "GlobalViewer";
+  const isAgencyAdmin    = user.role === "AgencyAdmin";
+  const isAgencyUser     = user.role === "AgencyUser";
+  const isAgencyReporter = user.role === "AgencyReporter";
+  const isAgencyScopedEditor = isAgencyAdmin || isAgencyUser;
+
+  const canViewDashboard = isSystemAdmin || isGlobalViewer || isAgencyScopedEditor;
+  const canViewInventory = isSystemAdmin || isGlobalViewer || isAgencyScopedEditor;
+  const canViewReports   = isSystemAdmin || isGlobalViewer || isAgencyScopedEditor || isAgencyReporter;
+  const canViewSettings  = isSystemAdmin || isAgencyAdmin;
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <TopBar />
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        <aside style={{
+          width: SIDEBAR_WIDTH, background: "#1e293b",
+          display: "flex", flexDirection: "column",
+          flexShrink: 0, borderRight: "1px solid #0f172a",
+        }}>
+          <div style={{ padding: "20px 16px 12px", borderBottom: "1px solid #334155" }}>
+            <div style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: 1,
+              color: "#64748b", marginBottom: 4, textTransform: "uppercase",
+            }}>Agency</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", lineHeight: 1.3 }}>
+              {user.agency === "Loading…" ? "Loading…" : user.agency}
             </div>
-
-            <NavGroup>
-              {canViewDashboard && (
-                <NavItem to="/">Dashboard</NavItem>
-              )}
-
-              {canViewInventory && (
-                <>
-                  <NavItem to="/equipment">My equipment</NavItem>
-                  <NavItem to="/locations">Locations</NavItem>
-                </>
-              )}
-
-              {canViewReports && (
-                <NavItem to="/reports">Reports</NavItem>
-              )}
-            </NavGroup>
           </div>
 
-          <div>
+          <nav style={{ flex: 1, padding: "12px 8px" }}>
+            <NavSection label="Main">
+              {canViewDashboard && <SidebarItem to="/" icon="⊞">Dashboard</SidebarItem>}
+              {canViewInventory && <SidebarItem to="/equipment" icon="◫">My equipment</SidebarItem>}
+              {canViewInventory && <SidebarItem to="/locations" icon="◎">Locations</SidebarItem>}
+              {canViewReports   && <SidebarItem to="/reports"   icon="▤">Reports</SidebarItem>}
+            </NavSection>
+
             {(isGlobalViewer || isSystemAdmin) && (
-              <NavGroup>
-                <NavItem to="/search">Global search</NavItem>
-              </NavGroup>
+              <NavSection label="Cross-agency">
+                <SidebarItem to="/search" icon="⌕">Global search</SidebarItem>
+              </NavSection>
             )}
 
             {canViewSettings && (
-              <NavGroup>
-                <NavItem to="/admin">Settings</NavItem>
-              </NavGroup>
+              <NavSection label="Admin">
+                <SidebarItem to="/admin" icon="⚙">Settings</SidebarItem>
+              </NavSection>
             )}
+          </nav>
+
+          <div style={{
+            padding: "12px 16px", borderTop: "1px solid #334155",
+            fontSize: 11, color: "#64748b",
+          }}>
+            Signed in as {user.role}
           </div>
         </aside>
 
-        <main
-          style={{
-            flex: 1,
-            padding: 24,
-            background: "#f9fafb",
-          }}
-        >
+        <main style={{ flex: 1, padding: "28px 32px", background: "#f8fafc", overflowY: "auto" }}>
           <Outlet />
         </main>
       </div>
-
       <DevToolbar />
     </div>
   );
 }
 
-/* ---------- helpers ---------- */
-
-function NavGroup({ children }: { children: React.ReactNode }) {
-  return <div style={{ marginBottom: 12 }}>{children}</div>;
+function NavSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{
+        fontSize: 10, fontWeight: 700, letterSpacing: 1,
+        color: "#475569", textTransform: "uppercase",
+        padding: "0 8px", marginBottom: 4,
+      }}>{label}</div>
+      {children}
+    </div>
+  );
 }
 
-function NavItem({
-  to,
-  children,
-}: {
-  to: string;
-  children: React.ReactNode;
-}) {
+function SidebarItem({ to, icon, children }: { to: string; icon: string; children: React.ReactNode }) {
   return (
     <NavLink
       to={to}
       end
       style={({ isActive }) => ({
-        display: "block",
-        padding: "8px 10px",
-        borderRadius: 6,
-        marginBottom: 4,
-        fontSize: 14,
-        textDecoration: "none",
-        color: "#111827",
-        background: isActive ? "#e5f0ff" : "transparent",
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "8px 10px", borderRadius: 6, marginBottom: 2,
+        fontSize: 13, textDecoration: "none",
+        color: isActive ? "#fff" : "#94a3b8",
+        background: isActive ? "#3b82f6" : "transparent",
         fontWeight: isActive ? 600 : 400,
       })}
     >
+      <span style={{ fontSize: 14, width: 16, textAlign: "center" }}>{icon}</span>
       {children}
     </NavLink>
   );
