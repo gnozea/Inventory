@@ -35,7 +35,7 @@ function availabilityFromStatus(status: Status): Availability {
    ========================= */
 
 export default function GlobalSearch() {
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
 
   const canAccess =
     user.role === "GlobalViewer" ||

@@ -47,7 +47,7 @@ function getLastSixMonths(): string[] {
 }
 
 export default function Reports() {
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
 
   const isGlobal =
     user.role === "GlobalViewer" ||

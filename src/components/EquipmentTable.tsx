@@ -26,7 +26,7 @@ export default function EquipmentTable({
   rows: EquipmentRow[];
   onChange: (rows: EquipmentRow[]) => void;
 }) {
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
 
   // ✅ Permission logic UNCHANGED
   const canEdit =

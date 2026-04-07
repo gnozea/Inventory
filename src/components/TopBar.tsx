@@ -3,7 +3,7 @@ import { useCurrentUser } from "../hooks/useCurrentUser";
 
 export default function TopBar() {
   const { instance } = useMsal();
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
 
   return (
     <div style={{
@@ -37,7 +37,7 @@ export default function TopBar() {
 
       <div style={{ flex: 1 }} />
 
-      {user.id !== "loading" && (
+      {user && (
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{
             padding: "3px 10px", borderRadius: 999,
@@ -53,7 +53,7 @@ export default function TopBar() {
               alignItems: "center", justifyContent: "center",
               fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0,
             }}>
-              {user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+              {user.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) ?? "?"}
             </div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.2 }}>{user.name}</div>
@@ -61,7 +61,7 @@ export default function TopBar() {
             </div>
           </div>
           <button
-            onClick={() => instance.logoutPopup()}
+            onClick={() => instance.logoutRedirect({ postLogoutRedirectUri: window.location.origin })}
             style={{
               padding: "5px 12px", fontSize: 12, cursor: "pointer",
               borderRadius: 6, border: "1px solid #334155",

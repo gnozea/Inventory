@@ -22,7 +22,7 @@ import exportEquipmentCsv from "../utils/exportEquipmentCsv";
 type Status = "Active" | "Maintenance" | "Decommissioned";
 
 export default function EquipmentList() {
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();

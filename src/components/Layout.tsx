@@ -3,13 +3,14 @@ import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import DevToolbar from "./DevToolbar";
 import TopBar from "./TopBar";
+import { loginRequest } from "../auth/msalConfig";
 
 const SIDEBAR_WIDTH = 220;
 
 export default function Layout() {
   const { inProgress, instance } = useMsal();
   const isAuthenticated = useIsAuthenticated();
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
 
   if (inProgress === "startup" || inProgress === "handleRedirect") {
     return (
@@ -40,9 +41,7 @@ export default function Layout() {
           East-West Gateway Council of Governments
         </p>
         <button
-          onClick={() => instance.loginPopup({
-            scopes: [`${import.meta.env.VITE_DATAVERSE_URL}/.default`],
-          })}
+          onClick={() => instance.loginRedirect(loginRequest)}
           style={{
             marginTop: 8, padding: "10px 32px", fontSize: 14,
             cursor: "pointer", borderRadius: 8, border: "none",
@@ -51,6 +50,19 @@ export default function Layout() {
         >
           Sign in with Microsoft
         </button>
+      </div>
+    );
+  }
+
+  // user may be null briefly while loading — App.tsx gates this,
+  // but guard here too for safety
+  if (!user) {
+    return (
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        height: "100vh", background: "#f9fafb", color: "#6b7280", fontSize: 14,
+      }}>
+        Loading profile…
       </div>
     );
   }
@@ -82,7 +94,7 @@ export default function Layout() {
               color: "#64748b", marginBottom: 4, textTransform: "uppercase",
             }}>Agency</div>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", lineHeight: 1.3 }}>
-              {user.agency === "Loading…" ? "Loading…" : user.agency}
+              {user.agency}
             </div>
           </div>
 

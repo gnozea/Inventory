@@ -9,7 +9,7 @@
 [32m+[m[32mimport AddEquipment from "./pages/AddEquipment";[m
  [m
  export default function App() {[m
-   const user = useCurrentUser();[m
+   const { user } = useCurrentUser();[m
 [36m@@ -19,7 +20,7 @@[m [mexport default function App() {[m
          <Route path="/" element={<Dashboard />} />[m
          <Route path="/equipment" element={<EquipmentList />} />[m
@@ -63,7 +63,7 @@
 [32m+[m[32mconst SIDEBAR_WIDTH = 180;[m
  [m
  export default function Layout() {[m
-   const user = useCurrentUser();[m
+   const { user } = useCurrentUser();[m
  [m
 [32m+[m[32m  const isSystemAdmin = user.role === "SystemAdmin";[m
 [32m+[m[32m  const isGlobalViewer = user.role === "GlobalViewer";[m
@@ -219,7 +219,7 @@
 [36m@@ -54,29 +55,33 @@[m [mconst MOCK_EQUIPMENT: Equipment[] = [[m
  [m
  export default function Dashboard() {[m
-   const user = useCurrentUser();[m
+   const { user } = useCurrentUser();[m
 [32m+[m[32m  const navigate = useNavigate();[m
    const [loading, setLoading] = useState(true);[m
  [m

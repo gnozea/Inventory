@@ -3,7 +3,7 @@ import { useCurrentUser } from "../hooks/useCurrentUser";
 import AccessDenied from "../components/AccessDenied";
 
 export default function AddEquipment() {
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
   const navigate = useNavigate();
 
   /**

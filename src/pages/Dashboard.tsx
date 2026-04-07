@@ -8,7 +8,7 @@ import { EQUIPMENT } from "../utils/equipment";
 type Status = "Active" | "Maintenance" | "Decommissioned";
 
 export default function Dashboard() {
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
 
   const [equipment, setEquipment] =
     useState<EquipmentRow[]>(EQUIPMENT);

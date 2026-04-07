@@ -39,7 +39,7 @@ function formatDate(date?: string) {
 
 export default function EquipmentDetail() {
   const { id } = useParams();
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
 
   const initial = getEquipmentById(Number(id));
   if (!initial) {

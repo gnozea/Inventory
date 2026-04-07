@@ -1,0 +1,11 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "AzureWebJobsDisableHomepage": "true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "SQL_CONNECTION_STRING": "Server=tcp:emergency-portal-srv.database.windows.net,1433;Initial Catalog=emergency-portal-db;Persist Security Info=False;User ID=CloudSA10554a9e;Password=Wearetheworld@27;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;",
+    "AZURE_AD_TENANT_ID": "31634a55-1240-4dc6-bc36-4879b296b226",
+    "AZURE_AD_CLIENT_ID": "25b87037-8336-48cd-bde0-289ae33604cd"
+  }
+}

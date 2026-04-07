@@ -6,7 +6,7 @@ import { EQUIPMENT } from "../utils/equipment";
 type Status = "Active" | "Maintenance" | "Decommissioned";
 
 export default function Search() {
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "">("");

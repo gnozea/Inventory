@@ -304,7 +304,7 @@ function getGroupedSettingsItems(role: string) {
 }
 
 export default function Admin() {
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
 
   if (!canAccessSettings(user.role)) {
     return <AccessDenied />;
@@ -372,7 +372,7 @@ export default function Admin() {
 }
 
 export function AdminHome() {
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
 
   if (!canAccessSettings(user.role)) {
     return <AccessDenied />;
@@ -815,7 +815,7 @@ export function AuditDiagnosticsSettings() {
 }
 
 export function AgencyProfileSettings() {
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
   const [form, setForm] = useState({
     displayName: user.agency,
     primaryContact: "Leah Watkins",
@@ -927,7 +927,7 @@ export function NotificationsSettings() {
 }
 
 export function AgencyUsersSettings() {
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
   const [users, setUsers] = useState(
     INITIAL_AGENCY_USERS.filter((item) => item.agency === user.agency)
   );
@@ -1248,7 +1248,7 @@ function SettingsPageFrame({
   allowedRoles: SettingsRole[];
   children: React.ReactNode;
 }) {
-  const user = useCurrentUser();
+  const { user } = useCurrentUser();
 
   if (!allowedRoles.includes(user.role as SettingsRole)) {
     return <AccessDenied />;
