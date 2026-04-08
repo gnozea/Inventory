@@ -15,7 +15,7 @@ if (!tenantId || !clientId) {
 const client = jwksClient({
   jwksUri: `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`,
   cache: true,
-  cacheMaxAge: 600000, // 10 minutes
+  cacheMaxAge: 600000,
   rateLimit: true,
 });
 
@@ -77,8 +77,20 @@ export async function getUserFromToken(
           return;
         }
 
+        // Extract email from token claims (works for any Microsoft account type)
+        const tokenEmail = (
+          decoded?.preferred_username ||
+          decoded?.email ||
+          decoded?.upn ||
+          ''
+        ).toLowerCase().trim();
+
+        const tokenName = decoded?.name || '';
+
         try {
           const pool = await getPool();
+
+          // ── Step 1: Look up by Azure AD Object ID (exact match) ──
           const result = await pool
             .request()
             .input('objectId', objectId)
@@ -89,9 +101,61 @@ export async function getUserFromToken(
               WHERE up.azure_ad_object_id = @objectId
             `);
 
-          const user = result.recordset[0];
+          let user = result.recordset[0];
+
+          // ── Step 2: Auto-match by email if no exact OID match ──
+          //
+          // When a SystemAdmin creates a user via Settings → Global Users
+          // or Settings → Agency Users, the azure_ad_object_id is set to
+          // "pending-{timestamp}" because the admin doesn't know the
+          // person's Azure AD Object ID.
+          //
+          // When that person signs in for the first time (with any
+          // Microsoft account — work, school, or personal), we match
+          // them by email and auto-link their real Object ID.
+          //
+          if (!user && tokenEmail) {
+            console.log(`[auth] No user for OID ${objectId}, trying email match: ${tokenEmail}`);
+
+            const emailMatch = await pool
+              .request()
+              .input('email', tokenEmail)
+              .query(`
+                SELECT up.*, a.name AS agency_name
+                FROM user_profiles up
+                LEFT JOIN agencies a ON up.agency_id = a.id
+                WHERE LOWER(up.email) = @email
+                  AND up.azure_ad_object_id LIKE 'pending-%'
+              `);
+
+            if (emailMatch.recordset[0]) {
+              user = emailMatch.recordset[0];
+              console.log(`[auth] Email match found: ${tokenEmail} → linking to OID ${objectId}`);
+
+              // Update the placeholder with the real Azure AD Object ID
+              // and update the display name from the token if available
+              await pool
+                .request()
+                .input('id', user.id)
+                .input('objectId', objectId)
+                .input('name', tokenName || user.full_name)
+                .query(`
+                  UPDATE user_profiles
+                  SET azure_ad_object_id = @objectId,
+                      full_name = @name
+                  WHERE id = @id
+                `);
+
+              console.log(`[auth] Auto-linked user ${tokenEmail} (${user.role}) → OID ${objectId}`);
+            } else {
+              console.warn(`[auth] No user profile found for OID ${objectId} or email ${tokenEmail}`);
+              resolve(null);
+              return;
+            }
+          }
+
           if (!user) {
-            console.warn(`[auth] No user_profile found for objectId: ${objectId}`);
+            console.warn(`[auth] No user profile found for OID: ${objectId}`);
             resolve(null);
             return;
           }
