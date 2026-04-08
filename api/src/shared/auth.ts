@@ -13,7 +13,7 @@ if (!tenantId || !clientId) {
 }
 
 const client = jwksClient({
-  jwksUri: `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`,
+  jwksUri: `https://login.microsoftonline.com/common/discovery/v2.0/keys`,
   cache: true,
   cacheMaxAge: 600000,
   rateLimit: true,
@@ -57,10 +57,13 @@ export async function getUserFromToken(
       token,
       getSigningKey as any,
       {
-        audience: `api://${clientId}`,
+        audience: [`api://${clientId}`, clientId!],
         issuer: [
           `https://login.microsoftonline.com/${tenantId}/v2.0`,
           `https://sts.windows.net/${tenantId}/`,
+          `https://login.microsoftonline.com/common/v2.0`,
+          `https://login.microsoftonline.com/organizations/v2.0`,
+          `https://login.microsoftonline.com/consumers/v2.0`,
         ],
       } as jwt.VerifyOptions,
       async (err, decoded: any) => {
