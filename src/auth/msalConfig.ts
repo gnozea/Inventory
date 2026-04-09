@@ -18,12 +18,12 @@ export const msalConfig: Configuration = {
     clientId,
     redirectUri: window.location.origin,
     postLogoutRedirectUri: window.location.origin,
-    navigateToLoginRequestUrl: true,
+    
   },
   cache: {
     // Use localStorage so the session survives page reloads during redirect flow
     cacheLocation: "localStorage",
-    storeAuthStateInCookie: false,
+    
   },
   system: {
     loggerOptions: {
