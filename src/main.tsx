@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { RouterProvider, createHashRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   PublicClientApplication,
@@ -44,7 +44,7 @@ const queryClient = new QueryClient({
 
 // ── Router ──────────────────────────────────────────────────────────────
 
-const router = createBrowserRouter(
+const router = createHashRouter(
   [{ path: "*", element: <App /> }],
   {
     future: {
