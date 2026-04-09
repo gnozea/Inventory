@@ -1,309 +1,184 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { useMsal } from "@azure/msal-react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
+import { apiScopes } from "../auth/msalConfig";
 import AccessDenied from "../components/AccessDenied";
-import { EQUIPMENT } from "../utils/equipment";
-import exportEquipmentCsv from "../utils/exportEquipmentCsv";
 
-/* =========================
-   Types
-   ========================= */
-
-type Status = "Active" | "Maintenance" | "Decommissioned";
-type Availability = "Available" | "In Use" | "Unavailable";
-
-/* =========================
-   Helpers
-   ========================= */
-
-function getAgencyType(agency: string) {
-  const a = agency.toLowerCase();
-  if (a.includes("fire")) return "fire";
-  if (a.includes("police")) return "police";
-  if (a.includes("ems")) return "ems";
-  return "rescue";
+async function apiFetch(instance: any, account: any, path: string) {
+  let tok;
+  try { tok = await instance.acquireTokenSilent({ account, scopes: apiScopes }); }
+  catch { await instance.acquireTokenRedirect({ account, scopes: apiScopes }); throw new Error("Redirecting…"); }
+  const res = await fetch(`/api${path}`, { headers: { Authorization: `Bearer ${tok.accessToken}` } });
+  if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
+  return res.json();
 }
 
-function availabilityFromStatus(status: Status): Availability {
-  if (status === "Active") return "Available";
-  if (status === "Maintenance") return "In Use";
-  return "Unavailable";
-}
+const STATUS_MAP: Record<number, string> = { 0: "Active", 1: "Active", 2: "Maintenance", 3: "Deployed", 4: "Decommissioned" };
+const STATUS_COLORS: Record<string, string> = { Active: "#22c55e", Maintenance: "#f59e0b", Deployed: "#3b82f6", Decommissioned: "#ef4444" };
+const AVAIL_MAP: Record<string, [string, string]> = { Active: ["Available", "#dcfce7"], Maintenance: ["In Use", "#fef3c7"], Deployed: ["Deployed", "#dbeafe"], Decommissioned: ["Unavailable", "#fee2e2"] };
 
-/* =========================
-   Component
-   ========================= */
+const S = {
+  table: { width: "100%", borderCollapse: "collapse", fontSize: 13, background: "#fff", borderRadius: 10, overflow: "hidden", border: "1px solid #e2e8f0" } as React.CSSProperties,
+  th: { textAlign: "left", padding: "12px 14px", fontWeight: 600, color: "#475569", borderBottom: "2px solid #e2e8f0", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, background: "#f8fafc" } as React.CSSProperties,
+  td: { padding: "12px 14px", borderBottom: "1px solid #f1f5f9", color: "#1e293b" } as React.CSSProperties,
+  input: { width: "100%", maxWidth: 520, padding: "12px 14px", fontSize: 15, borderRadius: 8, border: "1px solid #cbd5e1", marginBottom: 16, boxSizing: "border-box" } as React.CSSProperties,
+  select: { padding: "8px 12px", fontSize: 13, borderRadius: 6, border: "1px solid #cbd5e1", cursor: "pointer", background: "#fff" } as React.CSSProperties,
+  btnS: { padding: "8px 18px", fontSize: 13, fontWeight: 500, cursor: "pointer", borderRadius: 6, border: "1px solid #cbd5e1", background: "#fff", color: "#334155" } as React.CSSProperties,
+};
 
 export default function GlobalSearch() {
   const { user } = useCurrentUser();
+  const { instance, accounts } = useMsal();
 
-  const canAccess =
-    user.role === "GlobalViewer" ||
-    user.role === "SystemAdmin";
-
+  const canAccess = user?.role === "GlobalViewer" || user?.role === "SystemAdmin";
   if (!canAccess) return <AccessDenied />;
-
-  /* =========================
-     Search + Filters (state)
-     ========================= */
 
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-
   const [agencyFilter, setAgencyFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<Status | "">("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchInput.trim().toLowerCase());
-    }, 300);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
+    return () => clearTimeout(t);
   }, [searchInput]);
 
-  /* =========================
-     Derived filter options
-     ========================= */
+  // Fetch all equipment (global search sees everything)
+  const { data, isLoading } = useQuery({
+    queryKey: ["global-search", debouncedSearch],
+    queryFn: () => {
+      const path = debouncedSearch ? `/search?q=${encodeURIComponent(debouncedSearch)}` : "/equipment";
+      return apiFetch(instance, accounts[0], path);
+    },
+  });
 
-  const agencies = useMemo(
-    () => Array.from(new Set(EQUIPMENT.map(e => e.agency))).sort(),
-    []
-  );
+  const { data: agData } = useQuery({
+    queryKey: ["global-search-agencies"],
+    queryFn: () => apiFetch(instance, accounts[0], "/agencies"),
+  });
 
-  const categories = useMemo(
-    () => Array.from(new Set(EQUIPMENT.map(e => e.category))).sort(),
-    []
-  );
+  const allEquipment = data?.value || data || [];
+  const agencies = agData?.value || agData || [];
 
-  /* =========================
-     Filtered Results
-     ========================= */
-
+  // Client-side filters
   const results = useMemo(() => {
-    return EQUIPMENT.filter(e => {
-      if (
-        debouncedSearch &&
-        !e.name.toLowerCase().includes(debouncedSearch)
-      ) {
-        return false;
-      }
+    let rows = Array.isArray(allEquipment) ? allEquipment : [];
+    if (agencyFilter) rows = rows.filter((e: any) => e.agency_name === agencyFilter || e.agency_id === agencyFilter);
+    if (statusFilter) rows = rows.filter((e: any) => String(e.status) === statusFilter);
+    if (categoryFilter) rows = rows.filter((e: any) => e.category === categoryFilter);
+    return rows;
+  }, [allEquipment, agencyFilter, statusFilter, categoryFilter]);
 
-      if (agencyFilter && e.agency !== agencyFilter) {
-        return false;
-      }
+  const agencyCount = useMemo(() => new Set(results.map((r: any) => r.agency_name)).size, [results]);
+  const categories = useMemo(() => [...new Set((Array.isArray(allEquipment) ? allEquipment : []).map((e: any) => e.category).filter(Boolean))].sort(), [allEquipment]);
 
-      if (statusFilter && e.status !== statusFilter) {
-        return false;
-      }
-
-      if (categoryFilter && e.category !== categoryFilter) {
-        return false;
-      }
-
-      return true;
+  // CSV export
+  const exportCsv = () => {
+    if (!results.length) return;
+    const headers = ["Name", "Agency", "Location", "Category", "Status", "Availability", "Serial Number"];
+    const rows = results.map((e: any) => {
+      const sn = typeof e.status === "number" ? (STATUS_MAP[e.status] || "") : e.status;
+      const av = AVAIL_MAP[sn]?.[0] || "Unknown";
+      return [e.name, e.agency_name || "", e.location_name || "", e.category || "", sn, av, e.serial_number || ""];
     });
-  }, [
-    debouncedSearch,
-    agencyFilter,
-    statusFilter,
-    categoryFilter,
-  ]);
-
-  /* =========================
-     Results summary + audit
-     ========================= */
-
-  const agencyCount = useMemo(
-    () => new Set(results.map(r => r.agency)).size,
-    [results]
-  );
-
-  useEffect(() => {
-    if (!debouncedSearch && !agencyFilter && !statusFilter && !categoryFilter) {
-      return;
-    }
-    console.log(
-      `[GlobalSearch] user=${user.role} results=${results.length} agencies=${agencyCount} query="${debouncedSearch}"`
-    );
-  }, [
-    debouncedSearch,
-    agencyFilter,
-    statusFilter,
-    categoryFilter,
-    results,
-    agencyCount,
-    user.role,
-  ]);
-
-  /* =========================
-     Render
-     ========================= */
+    const csv = [headers, ...rows].map(r => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "global-search.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Global Search</h1>
+    <div>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", marginBottom: 12 }}>Global Search</h1>
 
-      <div
-        style={{
-          marginBottom: 16,
-          padding: "8px 12px",
-          background: "#fef3c7",
-          borderRadius: 6,
-          fontSize: 13,
-        }}
-      >
-        Read-only access. This page allows discovery across all
-        agencies without editing.
+      <div style={{ marginBottom: 16, padding: "10px 14px", background: "#fef3c7", borderRadius: 8, fontSize: 13, color: "#92400e", border: "1px solid #fde68a" }}>
+        Read-only cross-agency view. Search and filter equipment across all agencies.
       </div>
 
       <input
+        style={S.input}
         type="text"
-        placeholder="Search equipment by name…"
+        placeholder="Search equipment by name, serial number, or location…"
         value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-        style={{
-          width: "100%",
-          maxWidth: 520,
-          padding: "12px 14px",
-          fontSize: 16,
-          marginBottom: 16,
-        }}
+        onChange={e => setSearchInput(e.target.value)}
       />
 
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-        <select value={agencyFilter} onChange={e => setAgencyFilter(e.target.value)}>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16, alignItems: "center" }}>
+        <select style={S.select} value={agencyFilter} onChange={e => setAgencyFilter(e.target.value)}>
           <option value="">All Agencies</option>
-          {agencies.map(a => (
-            <option key={a} value={a}>{a}</option>
-          ))}
+          {Array.isArray(agencies) && agencies.map((a: any) => <option key={a.id} value={a.name}>{a.name}</option>)}
         </select>
-
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as Status | "")}>
+        <select style={S.select} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="">All Statuses</option>
-          <option value="Active">Active</option>
-          <option value="Maintenance">Maintenance</option>
-          <option value="Decommissioned">Decommissioned</option>
+          <option value="1">Active</option>
+          <option value="2">Maintenance</option>
+          <option value="3">Deployed</option>
+          <option value="4">Decommissioned</option>
         </select>
-
-        <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+        <select style={S.select} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
           <option value="">All Categories</option>
-          {categories.map(c => (
-            <option key={c} value={c}>{c}</option>
-          ))}
+          {categories.map((c: string) => <option key={c} value={c}>{c}</option>)}
         </select>
-
-        <button onClick={() => exportEquipmentCsv(results, "global-search.csv")}>
-          Export CSV
-        </button>
+        <button style={S.btnS} onClick={exportCsv}>Export CSV</button>
       </div>
 
-      <p style={{ fontSize: 13, marginBottom: 8 }}>
-        <strong>{results.length}</strong> results across{" "}
-        <strong>{agencyCount}</strong> agencies
+      <p style={{ fontSize: 13, marginBottom: 12, color: "#64748b" }}>
+        <strong style={{ color: "#0f172a" }}>{results.length}</strong> results across <strong style={{ color: "#0f172a" }}>{agencyCount}</strong> agencies
       </p>
 
-      <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #e5e7eb" }}>
-        <table width="100%" style={{ borderCollapse: "collapse" }}>
+      {isLoading ? (
+        <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
+          <div style={{ width: 32, height: 32, border: "3px solid #e5e7eb", borderTop: "3px solid #3b82f6", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+          Searching…
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      ) : (
+        <table style={S.table}>
           <thead>
-            <tr style={{ background: "#f9fafb" }}>
-              <th style={thStyle}>Equipment</th>
-              <th style={thStyle}>Agency</th>
-              <th style={thStyle}>Location</th>
-              <th style={thStyle}>Availability</th>
-              <th style={thStyle}>Status</th>
+            <tr>
+              <th style={S.th}>Equipment</th>
+              <th style={S.th}>Agency</th>
+              <th style={S.th}>Location</th>
+              <th style={S.th}>Category</th>
+              <th style={S.th}>Availability</th>
+              <th style={S.th}>Status</th>
             </tr>
           </thead>
           <tbody>
-            {results.map(r => (
-              <tr key={r.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                <td style={tdStyle}>
-                  <Link to={`/equipment/${r.id}`}>
-                    <strong>{r.name}</strong>
-                  </Link>
-                </td>
-                <td style={tdStyle}>
-                  <AgencyPill
-                    name={r.agency}
-                    type={getAgencyType(r.agency)}
-                  />
-                </td>
-                <td style={tdStyle}>{r.location}</td>
-                <td style={tdStyle}>
-                  <AvailabilityBadge
-                    value={availabilityFromStatus(r.status)}
-                  />
-                </td>
-                <td style={tdStyle}>
-                  <StatusPill status={r.status} />
-                </td>
-              </tr>
-            ))}
+            {results.length === 0 ? (
+              <tr><td colSpan={6} style={{ ...S.td, textAlign: "center", color: "#94a3b8", padding: 32 }}>No equipment found.</td></tr>
+            ) : results.map((r: any) => {
+              const statusName = typeof r.status === "number" ? (STATUS_MAP[r.status] || "Unknown") : r.status;
+              const color = STATUS_COLORS[statusName] || "#64748b";
+              const [avail, availBg] = AVAIL_MAP[statusName] || ["Unknown", "#f1f5f9"];
+              return (
+                <tr key={r.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                  <td style={S.td}>
+                    <Link to={`/equipment/${r.id}`} style={{ color: "#2563eb", textDecoration: "none", fontWeight: 600 }}>{r.name}</Link>
+                  </td>
+                  <td style={S.td}>
+                    <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: "#eff6ff", color: "#2563eb" }}>{r.agency_name || "—"}</span>
+                  </td>
+                  <td style={S.td}>{r.location_name || "—"}</td>
+                  <td style={S.td}>{r.category || "—"}</td>
+                  <td style={S.td}>
+                    <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: availBg, color: "#1e293b" }}>{avail}</span>
+                  </td>
+                  <td style={S.td}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "2px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, color, background: color + "18" }}>
+                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: color }} />{statusName}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
-      </div>
+      )}
     </div>
   );
 }
-
-/* =========================
-   Styles + Pills
-   ========================= */
-
-const thStyle: React.CSSProperties = {
-  padding: "12px",
-  fontSize: 13,
-  fontWeight: 600,
-  textAlign: "left",
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: "10px 12px",
-  fontSize: 14,
-};
-
-function StatusPill({ status }: { status: Status }) {
-  const colors = {
-    Active: "#dcfce7",
-    Maintenance: "#fef3c7",
-    Decommissioned: "#fee2e2",
-  };
-  return (
-    <span style={{ padding: "4px 8px", borderRadius: 999, background: colors[status], fontSize: 12 }}>
-      {status}
-    </span>
-  );
-}
-
-function AvailabilityBadge({ value }: { value: Availability }) {
-  const map = {
-    Available: "#dcfce7",
-    "In Use": "#e0f2fe",
-    Unavailable: "#fee2e2",
-  };
-  return (
-    <span style={{ padding: "4px 8px", borderRadius: 999, background: map[value], fontSize: 12 }}>
-      {value}
-    </span>
-  );
-}
-
-function AgencyPill({
-  name,
-  type,
-}: {
-  name: string;
-  type: "fire" | "police" | "ems" | "rescue";
-}) {
-  const colors = {
-    fire: "#fee2e2",
-    police: "#dbeafe",
-    ems: "#dcfce7",
-    rescue: "#fef3c7",
-  };
-  return (
-    <span style={{ padding: "4px 8px", borderRadius: 999, background: colors[type], fontSize: 12 }}>
-      {name}
-    </span>
-  );
-}
-

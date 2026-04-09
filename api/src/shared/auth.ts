@@ -57,14 +57,13 @@ export async function getUserFromToken(
       token,
       getSigningKey as any,
       {
+        // Validate audience — token must be issued for OUR app
         audience: [`api://${clientId}`, clientId!],
-        issuer: [
-          `https://login.microsoftonline.com/${tenantId}/v2.0`,
-          `https://sts.windows.net/${tenantId}/`,
-          `https://login.microsoftonline.com/common/v2.0`,
-          `https://login.microsoftonline.com/organizations/v2.0`,
-          `https://login.microsoftonline.com/consumers/v2.0`,
-        ],
+        // Do NOT validate issuer — this is a multi-tenant app that accepts
+        // tokens from any Microsoft Entra ID tenant. Security is enforced by:
+        //   1. Audience validation (above) — token must target our app
+        //   2. JWKS signature check — token must be signed by Microsoft
+        //   3. User lookup in database — user must exist in user_profiles
       } as jwt.VerifyOptions,
       async (err, decoded: any) => {
         if (err) {
@@ -114,8 +113,9 @@ export async function getUserFromToken(
           // person's Azure AD Object ID.
           //
           // When that person signs in for the first time (with any
-          // Microsoft account — work, school, or personal), we match
-          // them by email and auto-link their real Object ID.
+          // Microsoft account — work, school, or personal, from any
+          // tenant), we match them by email and auto-link their real
+          // Object ID.
           //
           if (!user && tokenEmail) {
             console.log(`[auth] No user for OID ${objectId}, trying email match: ${tokenEmail}`);

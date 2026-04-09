@@ -14,7 +14,7 @@ if (!tenantId || !clientId) {
 
 export const msalConfig: Configuration = {
   auth: {
-    authority: `https://login.microsoftonline.com/${tenantId}`,
+    authority: `https://login.microsoftonline.com/common`,
     clientId,
     redirectUri: window.location.origin,
     postLogoutRedirectUri: window.location.origin,
