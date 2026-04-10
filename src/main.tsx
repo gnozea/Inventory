@@ -13,6 +13,7 @@ import { msalConfig } from "./auth/msalConfig";
 import App from "./App";
 import "./index.css";
 
+
 // ── MSAL instance ───────────────────────────────────────────────────────
 
 const pca = new PublicClientApplication(msalConfig);
@@ -63,7 +64,7 @@ async function bootstrap() {
   // 1. Initialize MSAL
   await pca.initialize();
 
-  // 2. Handle redirect response (returns null if not coming back from a redirect)
+  // 2. Handle redirect response
   const response = await pca.handleRedirectPromise();
   if (response?.account) {
     pca.setActiveAccount(response.account);
@@ -76,10 +77,13 @@ async function bootstrap() {
     if (accounts.length > 0) {
       pca.setActiveAccount(accounts[0]);
       console.log("[bootstrap] Restored cached account:", accounts[0].username);
+    } else {
+      await pca.loginRedirect({ scopes: ["User.Read"] });
+      return; // Stop execution, do not render yet
     }
   }
 
-  // 4. Render
+  // 4. Render (only runs when authenticated)
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
       <MsalProvider instance={pca}>
@@ -94,11 +98,7 @@ async function bootstrap() {
   );
 }
 
+// ✅ This line is the missing piece
 bootstrap().catch((err) => {
-  console.error("[bootstrap] Fatal error:", err);
-  document.getElementById("root")!.innerHTML =
-    '<div style="padding:2rem;font-family:monospace">' +
-    '<h2 style="color:#dc2626">App failed to start</h2>' +
-    `<pre style="white-space:pre-wrap">${err.message}\n\n${err.stack || ""}</pre>` +
-    "</div>";
+  console.error("[bootstrap] failed", err);
 });

@@ -6,9 +6,9 @@ const clientId = import.meta.env.VITE_CLIENT_ID as string;
 if (!tenantId || !clientId) {
   console.error(
     "[msalConfig] VITE_TENANT_ID or VITE_CLIENT_ID is missing from .env. " +
-      "Create .env in project root:\n" +
-      "  VITE_TENANT_ID=your-tenant-id\n" +
-      "  VITE_CLIENT_ID=your-client-id"
+    "Create .env in project root:\n" +
+    "  VITE_TENANT_ID=your-tenant-id\n" +
+    "  VITE_CLIENT_ID=your-client-id"
   );
 }
 
@@ -18,12 +18,10 @@ export const msalConfig: Configuration = {
     clientId,
     redirectUri: window.location.origin,
     postLogoutRedirectUri: window.location.origin,
-    
   },
   cache: {
     // Use localStorage so the session survives page reloads during redirect flow
     cacheLocation: "localStorage",
-    
   },
   system: {
     loggerOptions: {
