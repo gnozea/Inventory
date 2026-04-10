@@ -16,8 +16,8 @@ export const msalConfig: Configuration = {
   auth: {
     authority: `https://login.microsoftonline.com/common`,
     clientId,
-    redirectUri: window.location.origin,
-    postLogoutRedirectUri: window.location.origin,
+    redirectUri: `${window.location.origin}/`,
+    postLogoutRedirectUri: `${window.location.origin}/`,
   },
   cache: {
     // Use localStorage so the session survives page reloads during redirect flow
