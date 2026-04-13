@@ -9,7 +9,7 @@ import {
   type AuthenticationResult,
 } from "@azure/msal-browser";
 import { MsalProvider } from "@azure/msal-react";
-import { msalConfig } from "./auth/msalConfig";
+import { msalConfig, apiScopes } from "./auth/msalConfig";
 import App from "./App";
 import "./index.css";
 
@@ -78,7 +78,7 @@ async function bootstrap() {
       pca.setActiveAccount(accounts[0]);
       console.log("[bootstrap] Restored cached account:", accounts[0].username);
     } else {
-      await pca.loginRedirect({ scopes: ["User.Read", "api://25b87037-8336-48cd-bde0-289ae33604cd/access_as_user"] });
+      await pca.loginRedirect({ scopes: ["User.Read", ...apiScopes] });
       return; // Stop execution, do not render yet
     }
   }
@@ -98,7 +98,6 @@ async function bootstrap() {
   );
 }
 
-// ✅ This line is the missing piece
 bootstrap().catch((err) => {
   console.error("[bootstrap] failed", err);
 });
