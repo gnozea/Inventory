@@ -28,4 +28,5 @@ api/__azurite_db_blob__.json
 api/__azurite_db_queue__.json
 api/__azurite_db_table__.json
 api/__azurite_db_blob_extent__.json
-api/__blobstorage__/
+api/__blobstorage__/api/dist/
+api/local.settings.json

@@ -1,3 +1,4 @@
+import { apiScopes } from "../auth/msalConfig";
 import { useMsal } from "@azure/msal-react";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
@@ -14,11 +15,11 @@ export function useApiClient() {
     try {
       tokenResponse = await instance.acquireTokenSilent({
         account,
-        scopes: ["User.Read"],
+        scopes: apiScopes,
       });
     } catch {
       tokenResponse = await instance.acquireTokenPopup({
-        scopes: ["User.Read"],
+        scopes: apiScopes,
       });
     }
 
