@@ -78,7 +78,7 @@ async function bootstrap() {
       pca.setActiveAccount(accounts[0]);
       console.log("[bootstrap] Restored cached account:", accounts[0].username);
     } else {
-      await pca.loginRedirect({ scopes: ["User.Read"] });
+      await pca.loginRedirect({ scopes: ["User.Read", "api://25b87037-8336-48cd-bde0-289ae33604cd/access_as_user"] });
       return; // Stop execution, do not render yet
     }
   }
