@@ -20,15 +20,25 @@ const client = jwksClient({
 });
 
 function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
-  if (!header.kid) {
-    return callback(new Error('JWT header missing kid'));
+  if (header.kid) {
+    // v2 token — look up by kid directly
+    client.getSigningKey(header.kid, (err, key) => {
+      if (err) return callback(err);
+      const signingKey = key?.getPublicKey();
+      if (!signingKey) return callback(new Error('No signing key found'));
+      callback(null, signingKey);
+    });
+  } else {
+    // v1 token — no kid in header, try all signing keys
+    console.warn('[auth] Token has no kid header — trying all JWKS keys');
+    client.getSigningKeys((err, keys) => {
+      if (err) return callback(err);
+      if (!keys || keys.length === 0) return callback(new Error('No signing keys found'));
+      // Use the first signing key (Microsoft typically has one active RSA key)
+      const signingKey = keys[0].getPublicKey();
+      callback(null, signingKey);
+    });
   }
-  client.getSigningKey(header.kid, (err, key) => {
-    if (err) return callback(err);
-    const signingKey = key?.getPublicKey();
-    if (!signingKey) return callback(new Error('No signing key found'));
-    callback(null, signingKey);
-  });
 }
 
 export interface AuthenticatedUser {
@@ -57,13 +67,7 @@ export async function getUserFromToken(
       token,
       getSigningKey as any,
       {
-        // Validate audience — token must be issued for OUR app
         audience: [`api://${clientId}`, clientId!],
-        // Do NOT validate issuer — this is a multi-tenant app that accepts
-        // tokens from any Microsoft Entra ID tenant. Security is enforced by:
-        //   1. Audience validation (above) — token must target our app
-        //   2. JWKS signature check — token must be signed by Microsoft
-        //   3. User lookup in database — user must exist in user_profiles
       } as jwt.VerifyOptions,
       async (err, decoded: any) => {
         if (err) {
@@ -79,7 +83,6 @@ export async function getUserFromToken(
           return;
         }
 
-        // Extract email from token claims (works for any Microsoft account type)
         const tokenEmail = (
           decoded?.preferred_username ||
           decoded?.email ||
@@ -92,7 +95,6 @@ export async function getUserFromToken(
         try {
           const pool = await getPool();
 
-          // ── Step 1: Look up by Azure AD Object ID (exact match) ──
           const result = await pool
             .request()
             .input('objectId', objectId)
@@ -105,18 +107,6 @@ export async function getUserFromToken(
 
           let user = result.recordset[0];
 
-          // ── Step 2: Auto-match by email if no exact OID match ──
-          //
-          // When a SystemAdmin creates a user via Settings → Global Users
-          // or Settings → Agency Users, the azure_ad_object_id is set to
-          // "pending-{timestamp}" because the admin doesn't know the
-          // person's Azure AD Object ID.
-          //
-          // When that person signs in for the first time (with any
-          // Microsoft account — work, school, or personal, from any
-          // tenant), we match them by email and auto-link their real
-          // Object ID.
-          //
           if (!user && tokenEmail) {
             console.log(`[auth] No user for OID ${objectId}, trying email match: ${tokenEmail}`);
 
@@ -135,8 +125,6 @@ export async function getUserFromToken(
               user = emailMatch.recordset[0];
               console.log(`[auth] Email match found: ${tokenEmail} → linking to OID ${objectId}`);
 
-              // Update the placeholder with the real Azure AD Object ID
-              // and update the display name from the token if available
               await pool
                 .request()
                 .input('id', user.id)
