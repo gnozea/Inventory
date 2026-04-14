@@ -30,14 +30,13 @@ function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) 
     });
   } else {
     // v1 token — no kid in header, try all signing keys
-    console.warn('[auth] Token has no kid header — trying all JWKS keys');
-    client.getSigningKeys((err, keys) => {
-      if (err) return callback(err);
-      if (!keys || keys.length === 0) return callback(new Error('No signing keys found'));
-      // Use the first signing key (Microsoft typically has one active RSA key)
-      const signingKey = keys[0].getPublicKey();
-      callback(null, signingKey);
-    });
+    client.getSigningKeys()
+      .then((keys) => {
+        if (!keys || keys.length === 0) return callback(new Error('No signing keys found'));
+        const signingKey = keys[0].getPublicKey();
+        callback(null, signingKey);
+      })
+      .catch((e) => callback(e));
   }
 }
 
