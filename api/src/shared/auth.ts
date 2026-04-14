@@ -22,16 +22,19 @@ const client = jwksClient({
 function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
   console.log('[auth] Token header:', JSON.stringify(header));
 
-  // HS256 should NOT come from Azure AD - this indicates a configuration problem
+  // Reject HS256 - Azure AD should only issue RS256 tokens
   if (header.alg === 'HS256') {
-    console.error('[auth] CRITICAL: Received HS256 token - Azure AD should issue RS256 tokens!');
-    console.error('[auth] This token is either invalid or your app registration is misconfigured.');
+    console.error('[auth] CRITICAL: Received HS256 token - this indicates SWA Easy Auth is still intercepting requests');
+    console.error('[auth] Check staticwebapp.config.json and SWA Authentication settings');
     return callback(new Error('HS256 algorithm not supported - Azure AD tokens must use RS256'));
   }
 
   if (header.kid) {
     client.getSigningKey(header.kid, (err, key) => {
-      if (err) return callback(err);
+      if (err) {
+        console.error('[auth] Error getting signing key:', err.message);
+        return callback(err);
+      }
       const signingKey = key?.getPublicKey();
       if (!signingKey) return callback(new Error('No signing key found'));
       callback(null, signingKey);
@@ -61,11 +64,13 @@ export async function getUserFromToken(
   authHeader: string | undefined | null
 ): Promise<AuthenticatedUser | null> {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.warn('[auth] No Authorization header or invalid format');
     return null;
   }
 
   const token = authHeader.split(' ')[1];
   if (!token) {
+    console.warn('[auth] No token in Authorization header');
     return null;
   }
 
@@ -78,7 +83,6 @@ export async function getUserFromToken(
     console.log('[auth] Issuer:', (decoded?.payload as any)?.iss || 'MISSING');
     console.log('[auth] Audience:', (decoded?.payload as any)?.aud || 'MISSING');
     console.log('[auth] Token version:', (decoded?.payload as any)?.ver || 'MISSING');
-    console.log('[auth] App ID:', (decoded?.payload as any)?.appid || (decoded?.payload as any)?.azp || 'MISSING');
     console.log('[auth] === END TOKEN DEBUG ===');
   } catch (decodeErr) {
     console.error('[auth] Failed to decode token for debugging:', decodeErr);
@@ -90,6 +94,7 @@ export async function getUserFromToken(
       getSigningKey as any,
       {
         audience: [`api://${clientId}`, clientId!],
+        issuer: `https://login.microsoftonline.com/${tenantId}/v2.0`,
         algorithms: ['RS256'],
       } as jwt.VerifyOptions,
       async (err, decoded: any) => {
