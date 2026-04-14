@@ -20,8 +20,8 @@ const client = jwksClient({
 });
 
 function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
+  console.log('[auth] Token header:', JSON.stringify(header));
   if (header.kid) {
-    // v2 token — look up by kid directly
     client.getSigningKey(header.kid, (err, key) => {
       if (err) return callback(err);
       const signingKey = key?.getPublicKey();
@@ -29,7 +29,7 @@ function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) 
       callback(null, signingKey);
     });
   } else {
-    // v1 token — no kid in header, try all signing keys
+    console.warn('[auth] Token has no kid header — trying all JWKS keys');
     client.getSigningKeys()
       .then((keys) => {
         if (!keys || keys.length === 0) return callback(new Error('No signing keys found'));
@@ -60,8 +60,7 @@ export async function getUserFromToken(
   if (!token) {
     return null;
   }
-  function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
-    console.log('[auth] Token header:', JSON.stringify(header));
+
   return new Promise((resolve) => {
     jwt.verify(
       token,
