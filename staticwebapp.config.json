@@ -9,9 +9,6 @@
       "/api/*"
     ]
   },
-  "platform": {
-    "apiRuntime": "node:22"
-  },
   "globalHeaders": {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
