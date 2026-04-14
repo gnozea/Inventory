@@ -60,7 +60,8 @@ export async function getUserFromToken(
   if (!token) {
     return null;
   }
-
+  function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
+    console.log('[auth] Token header:', JSON.stringify(header));
   return new Promise((resolve) => {
     jwt.verify(
       token,
