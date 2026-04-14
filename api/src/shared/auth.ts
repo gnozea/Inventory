@@ -13,7 +13,7 @@ if (!tenantId || !clientId) {
 }
 
 const client = jwksClient({
-  jwksUri: `https://login.microsoftonline.com/common/discovery/v2.0/keys`,
+  jwksUri: `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`,
   cache: true,
   cacheMaxAge: 600000,
   rateLimit: true,
@@ -21,6 +21,14 @@ const client = jwksClient({
 
 function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
   console.log('[auth] Token header:', JSON.stringify(header));
+
+  // HS256 should NOT come from Azure AD - this indicates a configuration problem
+  if (header.alg === 'HS256') {
+    console.error('[auth] CRITICAL: Received HS256 token - Azure AD should issue RS256 tokens!');
+    console.error('[auth] This token is either invalid or your app registration is misconfigured.');
+    return callback(new Error('HS256 algorithm not supported - Azure AD tokens must use RS256'));
+  }
+
   if (header.kid) {
     client.getSigningKey(header.kid, (err, key) => {
       if (err) return callback(err);
@@ -59,6 +67,21 @@ export async function getUserFromToken(
   const token = authHeader.split(' ')[1];
   if (!token) {
     return null;
+  }
+
+  // Debug: decode token WITHOUT verification to inspect claims
+  try {
+    const decoded = jwt.decode(token, { complete: true });
+    console.log('[auth] === TOKEN DEBUG INFO ===');
+    console.log('[auth] Algorithm:', decoded?.header?.alg);
+    console.log('[auth] Key ID:', decoded?.header?.kid || 'MISSING');
+    console.log('[auth] Issuer:', (decoded?.payload as any)?.iss || 'MISSING');
+    console.log('[auth] Audience:', (decoded?.payload as any)?.aud || 'MISSING');
+    console.log('[auth] Token version:', (decoded?.payload as any)?.ver || 'MISSING');
+    console.log('[auth] App ID:', (decoded?.payload as any)?.appid || (decoded?.payload as any)?.azp || 'MISSING');
+    console.log('[auth] === END TOKEN DEBUG ===');
+  } catch (decodeErr) {
+    console.error('[auth] Failed to decode token for debugging:', decodeErr);
   }
 
   return new Promise((resolve) => {
