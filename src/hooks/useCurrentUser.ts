@@ -82,7 +82,9 @@ export function useCurrentUser(): UseCurrentUserResult {
       //
       console.log("[useCurrentUser] Calling /api/me");
 
-      const res = await fetch("/api/me", {
+      // CORRECT - use environment variable
+      const apiUrl = import.meta.env.VITE_API_URL || '/api';
+      const res = await fetch(`${apiUrl}/me`, {
         headers: {
           Authorization: `Bearer ${tokenResponse.accessToken}`,
           "Content-Type": "application/json",
@@ -99,7 +101,7 @@ export function useCurrentUser(): UseCurrentUserResult {
         if (res.status === 401) {
           throw new Error(
             "Authentication failed — your token may have the wrong audience. " +
-              "Check that apiScopes in msalConfig.ts matches your Azure AD 'Expose an API' scope."
+            "Check that apiScopes in msalConfig.ts matches your Azure AD 'Expose an API' scope."
           );
         }
         if (res.status === 502) {
