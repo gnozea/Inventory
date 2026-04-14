@@ -1,24 +1,4 @@
 {
-  "routes": [
-    {
-      "route": "/.auth/login/aad",
-      "statusCode": 404
-    },
-    {
-      "route": "/.auth/login/github",
-      "statusCode": 404
-    },
-    {
-      "route": "/.auth/login/*",
-      "statusCode": 404
-    },
-    {
-      "route": "/.auth/*",
-      "allowedRoles": [
-        "anonymous"
-      ]
-    }
-  ],
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": [
