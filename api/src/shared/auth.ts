@@ -67,6 +67,7 @@ export async function getUserFromToken(
       getSigningKey as any,
       {
         audience: [`api://${clientId}`, clientId!],
+        algorithms: ['RS256'],
       } as jwt.VerifyOptions,
       async (err, decoded: any) => {
         if (err) {
