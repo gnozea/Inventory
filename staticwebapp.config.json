@@ -1,4 +1,7 @@
 {
+  "auth": {
+    "identityProviders": {}
+  },
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": [
