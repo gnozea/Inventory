@@ -1,6 +1,6 @@
 import { app } from '@azure/functions';
 import { corsHeaders, withCors } from '../shared/cors';
-import { getUserFromToken } from '../shared/auth';
+import { getUserFromToken, resolveAuthHeader } from '../shared/auth';
 import { getPool } from '../shared/db';
 
 app.http('getReports', {
@@ -8,7 +8,7 @@ app.http('getReports', {
   authLevel: 'anonymous',
   route: 'reports',
   handler: async (req: any) => {
-    const user = await getUserFromToken(req.headers.get('authorization'));
+    const user = await getUserFromToken(resolveAuthHeader(req));
     if (!user) return { status: 401, body: 'Unauthorized' };
     const pool = await getPool();
     const isGlobal = ['GlobalViewer', 'SystemAdmin'].includes(user.role);

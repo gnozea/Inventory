@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { corsHeaders, withCors } from '../shared/cors';
-import { getUserFromToken } from '../shared/auth';
+import { getUserFromToken, resolveAuthHeader } from '../shared/auth';
 import { getPool } from '../shared/db';
 
 app.http('updateEquipmentStatus', {
@@ -8,7 +8,7 @@ app.http('updateEquipmentStatus', {
   authLevel: 'anonymous',
   route: 'equipment/{id}/status',
   handler: async (req: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
-    const user = await getUserFromToken(req.headers.get('authorization'));
+    const user = await getUserFromToken(resolveAuthHeader(req));
     if (!user) return { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Unauthorized' }) };
     if (['AgencyReporter', 'GlobalViewer'].includes(user.role)) return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Forbidden' }) };
 

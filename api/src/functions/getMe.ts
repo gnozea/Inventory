@@ -1,5 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { getUserFromToken } from '../shared/auth';
+import { getUserFromToken, resolveAuthHeader } from '../shared/auth';
 import { corsHeaders, withCors } from '../shared/cors';
 
 app.http('getMe', {
@@ -11,7 +11,7 @@ app.http('getMe', {
       return { status: 204, headers: corsHeaders };
     }
 
-    const authHeader = req.headers.get('authorization');
+    const authHeader = resolveAuthHeader(req);
     context.log('[getMe] Auth header present:', !!authHeader);
 
     try {

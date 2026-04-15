@@ -1,6 +1,6 @@
 import { app } from '@azure/functions';
 import { corsHeaders, withCors } from '../shared/cors';
-import { getUserFromToken } from '../shared/auth';
+import { getUserFromToken, resolveAuthHeader } from '../shared/auth';
 import { getPool } from '../shared/db';
 
 app.http('searchEquipment', {
@@ -8,7 +8,7 @@ app.http('searchEquipment', {
   authLevel: 'anonymous',
   route: 'search',
   handler: async (req: any) => {
-    const user = await getUserFromToken(req.headers.get('authorization'));
+    const user = await getUserFromToken(resolveAuthHeader(req));
     if (!user) return { status: 401, body: 'Unauthorized' };
     if (!['GlobalViewer', 'SystemAdmin'].includes(user.role)) return { status: 403, body: 'Forbidden' };
 

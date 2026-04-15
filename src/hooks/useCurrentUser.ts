@@ -86,7 +86,7 @@ export function useCurrentUser(): UseCurrentUserResult {
       const apiUrl = import.meta.env.VITE_API_URL || '/api';
       const res = await fetch(`${apiUrl}/me`, {
         headers: {
-          Authorization: `Bearer ${tokenResponse.accessToken}`,
+          'X-MSAL-Token': `Bearer ${tokenResponse.accessToken}`,
           "Content-Type": "application/json",
         },
       });

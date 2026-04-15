@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { corsHeaders, withCors } from '../shared/cors';
-import { getUserFromToken } from '../shared/auth';
+import { getUserFromToken, resolveAuthHeader } from '../shared/auth';
 import { getPool } from '../shared/db';
 
 app.http('createAgency', {
@@ -9,7 +9,7 @@ app.http('createAgency', {
   route: 'agencies',
   handler: async (req: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
     if (req.method === 'OPTIONS') return { status: 204, headers: corsHeaders };
-    const user = await getUserFromToken(req.headers.get('authorization'));
+    const user = await getUserFromToken(resolveAuthHeader(req));
     if (!user) return { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Unauthorized' }) };
     if (user.role !== 'SystemAdmin') return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Only SystemAdmin can create agencies' }) };
     try {

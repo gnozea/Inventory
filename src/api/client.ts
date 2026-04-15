@@ -26,7 +26,7 @@ export function useApiClient() {
     const res = await fetch(`${API_URL}${path}`, {
       ...options,
       headers: {
-        Authorization: `Bearer ${tokenResponse.accessToken}`,
+        'X-MSAL-Token': `Bearer ${tokenResponse.accessToken}`,
         "Content-Type": "application/json",
         ...(options?.headers ?? {}),
       },

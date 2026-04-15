@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { corsHeaders, withCors } from '../shared/cors';
-import { getUserFromToken } from '../shared/auth';
+import { getUserFromToken, resolveAuthHeader } from '../shared/auth';
 import { getPool } from '../shared/db';
 
 app.http('getReferenceData', {
@@ -9,7 +9,7 @@ app.http('getReferenceData', {
   route: 'reference-data',
   handler: async (req: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
     if (req.method === 'OPTIONS') return { status: 204, headers: corsHeaders };
-    const user = await getUserFromToken(req.headers.get('authorization'));
+    const user = await getUserFromToken(resolveAuthHeader(req));
     if (!user) return { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Unauthorized' }) };
     try {
       const pool = await getPool();
@@ -33,7 +33,7 @@ app.http('createReferenceData', {
   route: 'reference-data',
   handler: async (req: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
     if (req.method === 'OPTIONS') return { status: 204, headers: corsHeaders };
-    const user = await getUserFromToken(req.headers.get('authorization'));
+    const user = await getUserFromToken(resolveAuthHeader(req));
     if (!user) return { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Unauthorized' }) };
     if (user.role !== 'SystemAdmin') return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Only SystemAdmin' }) };
     try {
@@ -59,7 +59,7 @@ app.http('deleteReferenceData', {
   route: 'reference-data/{id}',
   handler: async (req: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
     if (req.method === 'OPTIONS') return { status: 204, headers: corsHeaders };
-    const user = await getUserFromToken(req.headers.get('authorization'));
+    const user = await getUserFromToken(resolveAuthHeader(req));
     if (!user) return { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Unauthorized' }) };
     if (user.role !== 'SystemAdmin') return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Only SystemAdmin' }) };
     try {

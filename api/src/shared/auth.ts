@@ -51,6 +51,14 @@ function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) 
   }
 }
 
+// SWA Easy Auth rewrites the Authorization header with its own HS256 token.
+// The MSAL RS256 token is sent via X-MSAL-Token to bypass this interception.
+export function resolveAuthHeader(
+  req: { headers: { get: (name: string) => string | null } }
+): string | null {
+  return req.headers.get('x-msal-token') || req.headers.get('authorization');
+}
+
 export interface AuthenticatedUser {
   azureAdObjectId: string;
   name: string;
