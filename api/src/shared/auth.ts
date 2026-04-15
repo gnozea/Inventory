@@ -56,7 +56,10 @@ function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) 
 export function resolveAuthHeader(
   req: { headers: { get: (name: string) => string | null } }
 ): string | null {
-  return req.headers.get('x-msal-token') || req.headers.get('authorization');
+  const msalToken = req.headers.get('x-msal-token');
+  const authHeader = req.headers.get('authorization');
+  console.log('[auth] resolveAuthHeader: x-msal-token present:', !!msalToken, '| authorization present:', !!authHeader, '| using:', msalToken ? 'x-msal-token' : 'authorization');
+  return msalToken || authHeader;
 }
 
 export interface AuthenticatedUser {
