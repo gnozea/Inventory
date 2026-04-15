@@ -20,12 +20,8 @@ const client = jwksClient({
 });
 
 function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
-  console.log('[auth] Token header:', JSON.stringify(header));
-
   // Reject HS256 - Azure AD should only issue RS256 tokens
   if (header.alg === 'HS256') {
-    console.error('[auth] CRITICAL: Received HS256 token - this indicates SWA Easy Auth is still intercepting requests');
-    console.error('[auth] Check staticwebapp.config.json and SWA Authentication settings');
     return callback(new Error('HS256 algorithm not supported - Azure AD tokens must use RS256'));
   }
 
@@ -56,10 +52,7 @@ function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) 
 export function resolveAuthHeader(
   req: { headers: { get: (name: string) => string | null } }
 ): string | null {
-  const msalToken = req.headers.get('x-msal-token');
-  const authHeader = req.headers.get('authorization');
-  console.log('[auth] resolveAuthHeader: x-msal-token present:', !!msalToken, '| authorization present:', !!authHeader, '| using:', msalToken ? 'x-msal-token' : 'authorization');
-  return msalToken || authHeader;
+  return req.headers.get('x-msal-token') || req.headers.get('authorization');
 }
 
 export interface AuthenticatedUser {
@@ -83,20 +76,6 @@ export async function getUserFromToken(
   if (!token) {
     console.warn('[auth] No token in Authorization header');
     return null;
-  }
-
-  // Debug: decode token WITHOUT verification to inspect claims
-  try {
-    const decoded = jwt.decode(token, { complete: true });
-    console.log('[auth] === TOKEN DEBUG INFO ===');
-    console.log('[auth] Algorithm:', decoded?.header?.alg);
-    console.log('[auth] Key ID:', decoded?.header?.kid || 'MISSING');
-    console.log('[auth] Issuer:', (decoded?.payload as any)?.iss || 'MISSING');
-    console.log('[auth] Audience:', (decoded?.payload as any)?.aud || 'MISSING');
-    console.log('[auth] Token version:', (decoded?.payload as any)?.ver || 'MISSING');
-    console.log('[auth] === END TOKEN DEBUG ===');
-  } catch (decodeErr) {
-    console.error('[auth] Failed to decode token for debugging:', decodeErr);
   }
 
   return new Promise((resolve) => {

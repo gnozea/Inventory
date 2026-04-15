@@ -19,7 +19,7 @@ export function getCorsHeaders(requestOrigin?: string | null): Record<string, st
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Allow-Headers': 'X-MSAL-Token, Content-Type',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Max-Age': '86400',
   };
@@ -29,7 +29,7 @@ export function getCorsHeaders(requestOrigin?: string | null): Record<string, st
 export const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': 'https://black-rock-09f33ef0f.7.azurestaticapps.net',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+  'Access-Control-Allow-Headers': 'X-MSAL-Token, Content-Type',
   'Access-Control-Allow-Credentials': 'true',
   'Access-Control-Max-Age': '86400',
 };
