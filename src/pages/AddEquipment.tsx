@@ -12,7 +12,7 @@ async function apiFetch(instance: any, account: any, path: string, options?: Req
   catch { await instance.acquireTokenRedirect({ account, scopes: apiScopes }); throw new Error("Redirecting…"); }
   const res = await fetch(`/api${path}`, {
     ...options,
-    headers: { Authorization: `Bearer ${tok.accessToken}`, "Content-Type": "application/json", ...options?.headers },
+    headers: { 'X-MSAL-Token': `Bearer ${tok.accessToken}`, "Content-Type": "application/json", ...options?.headers },
   });
   if (!res.ok) { const b = await res.text().catch(() => ""); throw new Error(`API ${path} → ${res.status}: ${b}`); }
   return res.json();

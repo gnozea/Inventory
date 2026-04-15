@@ -9,7 +9,7 @@ async function apiFetch(instance: any, account: any, path: string) {
   let tok;
   try { tok = await instance.acquireTokenSilent({ account, scopes: apiScopes }); }
   catch { await instance.acquireTokenRedirect({ account, scopes: apiScopes }); throw new Error("Redirecting…"); }
-  const res = await fetch(`/api${path}`, { headers: { Authorization: `Bearer ${tok.accessToken}` } });
+  const res = await fetch(`/api${path}`, { headers: { 'X-MSAL-Token': `Bearer ${tok.accessToken}` } });
   if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
   return res.json();
 }
