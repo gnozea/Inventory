@@ -21,7 +21,12 @@ app.http('updateUser', {
       if (user.role === 'AgencyAdmin' && target.recordset[0].agency_id !== user.agencyId) return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Cannot modify users outside your agency' }) };
       const updates: string[] = [];
       const request = pool.request().input('id', id);
-      if (body.role) { updates.push('role = @role'); request.input('role', body.role); }
+      if (body.role) {
+        if (user.role === 'AgencyAdmin' && !['AgencyAdmin', 'AgencyUser', 'AgencyReporter'].includes(body.role)) {
+          return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'AgencyAdmin cannot assign this role' }) };
+        }
+        updates.push('role = @role'); request.input('role', body.role);
+      }
       if (body.full_name) { updates.push('full_name = @full_name'); request.input('full_name', body.full_name); }
       if (body.email) { updates.push('email = @email'); request.input('email', body.email); }
       if (updates.length === 0) return { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'No fields to update' }) };
