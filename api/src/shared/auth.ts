@@ -115,12 +115,17 @@ export async function getUserFromToken(
         }
 
         const rawPreferred = (decoded?.preferred_username || '').toLowerCase().trim();
+        const isGuest = rawPreferred.includes('#ext#');
+        const extractedEmail = isGuest ? extractEmailFromExtUpn(rawPreferred) : null;
         const tokenEmail = (
-          (rawPreferred.includes('#ext#') ? extractEmailFromExtUpn(rawPreferred) : null) ||
+          extractedEmail ||
           decoded?.email ||
           rawPreferred ||
           (decoded?.upn || '').toLowerCase().trim()
         ) ?? '';
+
+        // TEMPORARY DIAGNOSTIC — remove once B2B 401 root cause is confirmed
+        console.log(`[auth:diag] isGuest:${isGuest} extractedEmailPresent:${extractedEmail !== null} tokenEmailPresent:${tokenEmail.length > 0}`);
 
         const tokenName = decoded?.name || '';
 
@@ -144,6 +149,8 @@ export async function getUserFromToken(
           let user = result.recordset[0];
 
           if (!user && tokenEmail) {
+            // TEMPORARY DIAGNOSTIC — remove once B2B 401 root cause is confirmed
+            console.log(`[auth:diag] enteredEmailMatchBranch:true`);
             console.log(`[auth] OID lookup miss (…${safeOid}), attempting pre-approved email match`);
 
             const emailMatch = await pool
@@ -175,6 +182,13 @@ export async function getUserFromToken(
 
               console.log(`[auth] Account linked for role: ${user.role}`);
             } else {
+              // TEMPORARY DIAGNOSTIC — remove once B2B 401 root cause is confirmed
+              const diagCheck = await pool.request()
+                .input('diagEmail', tokenEmail)
+                .query(`SELECT azure_ad_object_id FROM user_profiles WHERE LOWER(email) = @diagEmail`);
+              const diagRow = diagCheck.recordset[0];
+              const dbOidState = !diagRow ? 'absent' : diagRow.azure_ad_object_id.startsWith('pending-') ? 'pending' : 'linked';
+              console.warn(`[auth:diag] emailExistsInDB:${!!diagRow} dbOidState:${dbOidState}`);
               console.warn(`[auth] No pre-approved profile found for OID …${safeOid} or email ${safeEmail}`);
               resolve(null);
               return;
@@ -182,6 +196,8 @@ export async function getUserFromToken(
           }
 
           if (!user) {
+            // TEMPORARY DIAGNOSTIC — remove once B2B 401 root cause is confirmed
+            console.warn(`[auth:diag] enteredEmailMatchBranch:${!!(tokenEmail)} tokenEmailPresent:${tokenEmail.length > 0}`);
             console.warn(`[auth] No user profile found for OID …${safeOid}`);
             resolve(null);
             return;
