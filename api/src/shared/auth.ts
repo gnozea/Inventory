@@ -48,11 +48,11 @@ function getSigningKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) 
 }
 
 // SWA Easy Auth rewrites the Authorization header with its own HS256 token.
-// The MSAL RS256 token is sent via X-MSAL-Token to bypass this interception.
+// Only X-MSAL-Token is accepted; the standard Authorization header is ignored.
 export function resolveAuthHeader(
   req: { headers: { get: (name: string) => string | null } }
 ): string | null {
-  return req.headers.get('x-msal-token') || req.headers.get('authorization');
+  return req.headers.get('x-msal-token');
 }
 
 export interface AuthenticatedUser {
@@ -110,6 +110,10 @@ export async function getUserFromToken(
 
         const tokenName = decoded?.name || '';
 
+        // Redacted identifiers for safe logging — not suitable for lookup, only for log correlation
+        const safeEmail = tokenEmail ? tokenEmail.substring(0, 3) + '…' : '(none)';
+        const safeOid = objectId ? objectId.slice(-8) : '(none)';
+
         try {
           const pool = await getPool();
 
@@ -126,7 +130,7 @@ export async function getUserFromToken(
           let user = result.recordset[0];
 
           if (!user && tokenEmail) {
-            console.log(`[auth] No user for OID ${objectId}, trying email match: ${tokenEmail}`);
+            console.log(`[auth] OID lookup miss (…${safeOid}), attempting pre-approved email match`);
 
             const emailMatch = await pool
               .request()
@@ -141,7 +145,7 @@ export async function getUserFromToken(
 
             if (emailMatch.recordset[0]) {
               user = emailMatch.recordset[0];
-              console.log(`[auth] Email match found: ${tokenEmail} → linking to OID ${objectId}`);
+              console.log(`[auth] Pre-approved email matched (${safeEmail}), linking account`);
 
               await pool
                 .request()
@@ -155,16 +159,16 @@ export async function getUserFromToken(
                   WHERE id = @id
                 `);
 
-              console.log(`[auth] Auto-linked user ${tokenEmail} (${user.role}) → OID ${objectId}`);
+              console.log(`[auth] Account linked for role: ${user.role}`);
             } else {
-              console.warn(`[auth] No user profile found for OID ${objectId} or email ${tokenEmail}`);
+              console.warn(`[auth] No pre-approved profile found for OID …${safeOid} or email ${safeEmail}`);
               resolve(null);
               return;
             }
           }
 
           if (!user) {
-            console.warn(`[auth] No user profile found for OID: ${objectId}`);
+            console.warn(`[auth] No user profile found for OID …${safeOid}`);
             resolve(null);
             return;
           }
