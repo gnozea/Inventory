@@ -3,9 +3,14 @@ import { corsHeaders } from '../shared/cors';
 import { getUserFromToken, resolveAuthHeader } from '../shared/auth';
 import { getPool } from '../shared/db';
 
-// Dual-approval logic:
-//   Permanent transfer: pending → agency_approved (AgencyAdmin of from_agency) → approved (SystemAdmin)
-//   Borrow:            pending → approved (AgencyAdmin of from_agency)
+// Approval logic:
+//   Permanent transfer:
+//     AgencyAdmin of from_agency at pending  → agency_approved
+//     SystemAdmin                at pending  → approved (covers both stages in one step)
+//     SystemAdmin                at agency_approved → approved
+//   Borrow:
+//     AgencyAdmin of from_agency at pending  → approved
+//     SystemAdmin                at pending  → approved
 
 app.http('approveTransfer', {
   methods: ['PATCH'],
@@ -32,13 +37,18 @@ app.http('approveTransfer', {
       const now = new Date().toISOString();
       let newStatus: string;
 
+      const isSystemAdmin = user.role === 'SystemAdmin';
+      const isAgencyAdmin = user.role === 'AgencyAdmin';
+
       if (tr.request_type === 'borrow') {
-        // Borrows: AgencyAdmin of from_agency gives final approval
-        if (user.role !== 'AgencyAdmin') {
-          return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Only an AgencyAdmin can approve borrow requests' }) };
-        }
-        if (tr.from_agency_id !== user.agencyId) {
-          return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'You can only approve borrows from your own agency' }) };
+        // Borrows: AgencyAdmin of from_agency OR SystemAdmin gives final approval
+        if (!isSystemAdmin) {
+          if (!isAgencyAdmin) {
+            return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Only an AgencyAdmin or SystemAdmin can approve borrow requests' }) };
+          }
+          if (tr.from_agency_id !== user.agencyId) {
+            return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'You can only approve borrows from your own agency' }) };
+          }
         }
         if (tr.status !== 'pending') {
           return { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: `Cannot approve a borrow in status: ${tr.status}` }) };
@@ -60,38 +70,56 @@ app.http('approveTransfer', {
           `);
 
       } else {
-        // Permanent transfer: two-stage approval
+        // Permanent transfer
         if (tr.status === 'pending') {
-          // Stage 1: AgencyAdmin of from_agency
-          if (user.role !== 'AgencyAdmin') {
-            return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Stage 1 approval requires AgencyAdmin of the originating agency' }) };
+          if (isSystemAdmin) {
+            // SystemAdmin covers both stages in one step
+            newStatus = 'approved';
+            await pool.request()
+              .input('id', tr.id)
+              .input('approvedBy', user.name)
+              .input('approvedAt', now)
+              .input('newStatus', newStatus)
+              .query(`
+                UPDATE transfer_requests
+                SET status = @newStatus,
+                    agency_approved_by = @approvedBy,
+                    agency_approved_at = @approvedAt,
+                    system_approved_by = @approvedBy,
+                    system_approved_at = @approvedAt,
+                    modified_at = GETUTCDATE()
+                WHERE id = @id
+              `);
+          } else {
+            // AgencyAdmin of from_agency — stage 1
+            if (!isAgencyAdmin) {
+              return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Stage 1 approval requires AgencyAdmin of the originating agency' }) };
+            }
+            if (tr.from_agency_id !== user.agencyId) {
+              return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'You can only approve transfers from your own agency' }) };
+            }
+            newStatus = 'agency_approved';
+            await pool.request()
+              .input('id', tr.id)
+              .input('approvedBy', user.name)
+              .input('approvedAt', now)
+              .input('newStatus', newStatus)
+              .query(`
+                UPDATE transfer_requests
+                SET status = @newStatus,
+                    agency_approved_by = @approvedBy,
+                    agency_approved_at = @approvedAt,
+                    modified_at = GETUTCDATE()
+                WHERE id = @id
+              `);
           }
-          if (tr.from_agency_id !== user.agencyId) {
-            return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'You can only approve transfers from your own agency' }) };
-          }
-          newStatus = 'agency_approved';
-
-          await pool.request()
-            .input('id', tr.id)
-            .input('approvedBy', user.name)
-            .input('approvedAt', now)
-            .input('newStatus', newStatus)
-            .query(`
-              UPDATE transfer_requests
-              SET status = @newStatus,
-                  agency_approved_by = @approvedBy,
-                  agency_approved_at = @approvedAt,
-                  modified_at = GETUTCDATE()
-              WHERE id = @id
-            `);
 
         } else if (tr.status === 'agency_approved') {
-          // Stage 2: SystemAdmin gives final approval
-          if (user.role !== 'SystemAdmin') {
+          // Stage 2: SystemAdmin only
+          if (!isSystemAdmin) {
             return { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Stage 2 approval requires SystemAdmin' }) };
           }
           newStatus = 'approved';
-
           await pool.request()
             .input('id', tr.id)
             .input('approvedBy', user.name)

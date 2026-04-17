@@ -81,10 +81,19 @@ export default function Transfers() {
 
     if (canApprove) {
       // Approve button
-      if (tr.status === "pending" && isAgencyAdmin && tr.from_agency_id === user.agencyId) {
+      const pendingApprover =
+        isSystemAdmin ||
+        (isAgencyAdmin && tr.from_agency_id === user.agencyId);
+      if (tr.status === "pending" && pendingApprover) {
+        const label =
+          tr.request_type === "borrow"
+            ? "Approve"
+            : isSystemAdmin
+            ? "Approve (Both Stages)"
+            : "Agency Approve";
         actions.push(
           <button key="approve" style={S.btn(true)} onClick={() => approveMut.mutate(tr.id)} disabled={approveMut.isPending}>
-            {tr.request_type === "borrow" ? "Approve" : "Agency Approve"}
+            {label}
           </button>
         );
       }
