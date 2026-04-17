@@ -128,3 +128,113 @@ export function useSearchApi() {
     },
   };
 }
+
+export function useTransferApi() {
+  const { apiFetch } = useApiClient();
+  return {
+    async getTransfers(filters?: { status?: string; type?: string }) {
+      const params = new URLSearchParams();
+      if (filters?.status) params.set("status", filters.status);
+      if (filters?.type) params.set("type", filters.type);
+      const res = await apiFetch<{ value: any[] }>(`/transfers?${params}`);
+      return res.value;
+    },
+
+    async getTransferById(id: string) {
+      return apiFetch<any>(`/transfers/${id}`);
+    },
+
+    async createTransfer(body: {
+      equipment_id: string;
+      request_type: "transfer" | "borrow";
+      to_agency_id: string;
+      notes?: string;
+      expected_return_date?: string;
+    }) {
+      return apiFetch<any>("/transfers", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+    },
+
+    async approveTransfer(id: string) {
+      return apiFetch<any>(`/transfers/${id}/approve`, { method: "PATCH", body: "{}" });
+    },
+
+    async denyTransfer(id: string, reason?: string) {
+      return apiFetch<any>(`/transfers/${id}/deny`, {
+        method: "PATCH",
+        body: JSON.stringify({ reason }),
+      });
+    },
+
+    async updateTransferStatus(id: string, status: string) {
+      return apiFetch<any>(`/transfers/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+    },
+  };
+}
+
+export function useLibraryApi() {
+  const { apiFetch } = useApiClient();
+  return {
+    async getCategories() {
+      const res = await apiFetch<{ value: any[] }>("/library/categories");
+      return res.value;
+    },
+
+    async createCategory(name: string, description?: string) {
+      return apiFetch<any>("/library/categories", {
+        method: "POST",
+        body: JSON.stringify({ name, description }),
+      });
+    },
+
+    async getResources(filters?: { categoryId?: string; search?: string }) {
+      const params = new URLSearchParams();
+      if (filters?.categoryId) params.set("categoryId", filters.categoryId);
+      if (filters?.search) params.set("search", filters.search);
+      const res = await apiFetch<{ value: any[] }>(`/library?${params}`);
+      return res.value;
+    },
+
+    async getResourceById(id: string) {
+      return apiFetch<any>(`/library/${id}`);
+    },
+
+    async createResource(body: {
+      category_id: string;
+      title: string;
+      description?: string;
+      file_url?: string;
+      file_type?: string;
+      tags?: string;
+      agency_id?: string | null;
+    }) {
+      return apiFetch<any>("/library", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+    },
+
+    async updateResource(id: string, body: Partial<{
+      title: string;
+      description: string;
+      category_id: string;
+      file_url: string;
+      file_type: string;
+      tags: string;
+    }>) {
+      return apiFetch<any>(`/library/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+    },
+
+    async deleteResource(id: string) {
+      return apiFetch<void>(`/library/${id}`, { method: "DELETE" });
+    },
+  };
+}

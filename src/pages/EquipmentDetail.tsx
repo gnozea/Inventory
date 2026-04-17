@@ -5,6 +5,7 @@ import { useMsal } from "@azure/msal-react";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { apiScopes } from "../auth/msalConfig";
 import AccessDenied from "../components/AccessDenied";
+import TransferRequestModal from "../components/TransferRequestModal";
 
 async function apiFetch(instance: any, account: any, path: string, options?: RequestInit) {
   let tok;
@@ -64,6 +65,7 @@ export default function EquipmentDetail() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<any>(null);
   const [toast, setToast] = useState("");
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   const { data: eq, isLoading, error } = useQuery({
     queryKey: ["equipment-detail", id],
@@ -106,6 +108,7 @@ export default function EquipmentDetail() {
   if (!eq) return <div style={{ padding: 24 }}><h1>Equipment Not Found</h1><Link to="/equipment" style={{ color: "#3b82f6" }}>← Back</Link></div>;
 
   const canEdit = ["SystemAdmin", "AgencyAdmin", "AgencyUser"].includes(user.role);
+  const canRequestTransfer = ["SystemAdmin", "AgencyAdmin", "AgencyUser"].includes(user.role);
   const statusName = typeof eq.status === "number" ? (STATUS_MAP[eq.status] || String(eq.status)) : eq.status;
 
   const startEditing = () => { setDraft({ ...eq }); setEditing(true); };
@@ -127,6 +130,11 @@ export default function EquipmentDetail() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
+          {canRequestTransfer && !editing && (
+            <button style={S.btnS} onClick={() => setShowTransferModal(true)}>
+              Transfer / Borrow
+            </button>
+          )}
           {canEdit && !editing && <button style={S.btnP} onClick={startEditing}>Edit Equipment</button>}
           {editing && <button style={S.btnP} onClick={() => { setToast("Changes saved"); cancelEditing(); }}>Save Changes</button>}
           {editing && <button style={S.btnS} onClick={cancelEditing}>Cancel</button>}
@@ -263,6 +271,15 @@ export default function EquipmentDetail() {
           <div><div style={S.label}>Equipment ID</div><div style={S.val}><code style={{ fontSize: 12, background: "#f1f5f9", padding: "2px 6px", borderRadius: 3 }}>{eq.id}</code></div></div>
         </div>
       </div>
+
+      {showTransferModal && eq && (
+        <TransferRequestModal
+          equipmentId={eq.id}
+          equipmentName={eq.name}
+          fromAgencyId={eq.agency_id}
+          onClose={() => setShowTransferModal(false)}
+        />
+      )}
     </div>
   );
 }

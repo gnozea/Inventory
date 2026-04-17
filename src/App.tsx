@@ -28,6 +28,8 @@ import Admin, {
   DefaultEquipmentValuesSettings,
   ReportingPreferencesSettings,
 } from "./pages/Admin";
+import Transfers from "./pages/Transfers";
+import Library from "./pages/Library";
 import AccessDenied from "./components/AccessDenied";
 import { useCurrentUser } from "./hooks/useCurrentUser";
 import { loginRequest } from "./auth/msalConfig";
@@ -255,6 +257,10 @@ export default function App() {
     isAgencyReporter;
   const canAddEquipment = isSystemAdmin || isAgencyScopedEditor;
   const canViewSettings = isSystemAdmin || isAgencyAdmin;
+  const canViewTransfers =
+    isSystemAdmin || isGlobalViewer || isAgencyAdmin || isAgencyUser;
+  const canViewLibrary =
+    isSystemAdmin || isGlobalViewer || isAgencyAdmin || isAgencyUser || isAgencyReporter;
 
   return (
     <RouterRoutes>
@@ -294,6 +300,14 @@ export default function App() {
         <Route
           path="/reports"
           element={canViewReports ? <Reports /> : <AccessDenied />}
+        />
+        <Route
+          path="/transfers"
+          element={canViewTransfers ? <Transfers /> : <AccessDenied />}
+        />
+        <Route
+          path="/library"
+          element={canViewLibrary ? <Library /> : <AccessDenied />}
         />
         <Route
           path="/admin"
