@@ -104,6 +104,8 @@ export default function Layout() {
               {canViewInventory && <SidebarItem to="/equipment" icon="◫">My equipment</SidebarItem>}
               {canViewInventory && <SidebarItem to="/locations" icon="◎">Locations</SidebarItem>}
               {canViewReports   && <SidebarItem to="/reports"   icon="▤">Reports</SidebarItem>}
+              <SidebarItem to="/transfers" icon="↔">Transfers</SidebarItem>
+              <SidebarItem to="/library"   icon="📚">Library</SidebarItem>
             </NavSection>
 
             {(isGlobalViewer || isSystemAdmin) && (
