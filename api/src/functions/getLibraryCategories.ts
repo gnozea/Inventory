@@ -6,7 +6,7 @@ import { getPool } from '../shared/db';
 app.http('getLibraryCategories', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'library/categories',
+  route: 'library-categories',
   handler: async (req: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
     if (req.method === 'OPTIONS') return { status: 204, headers: corsHeaders };
 

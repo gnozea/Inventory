@@ -181,12 +181,12 @@ export function useLibraryApi() {
   const { apiFetch } = useApiClient();
   return {
     async getCategories() {
-      const res = await apiFetch<{ value: any[] }>("/library/categories");
+      const res = await apiFetch<{ value: any[] }>("/library-categories");
       return res.value;
     },
 
     async createCategory(name: string, description?: string) {
-      return apiFetch<any>("/library/categories", {
+      return apiFetch<any>("/library-categories", {
         method: "POST",
         body: JSON.stringify({ name, description }),
       });
