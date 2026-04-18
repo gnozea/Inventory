@@ -2,6 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { corsHeaders } from '../shared/cors';
 import { getUserFromToken, resolveAuthHeader } from '../shared/auth';
 import { getPool } from '../shared/db';
+import { getTransferContext, notifyApproved } from '../shared/notifications';
 
 // Approval logic:
 //   Permanent transfer:
@@ -140,6 +141,12 @@ app.http('approveTransfer', {
       }
 
       context.log(`[approveTransfer] ${tr.id} → ${newStatus} by ${user.name}`);
+
+      // Fire-and-forget notification
+      getTransferContext(tr.id, pool).then(ctx => {
+        if (ctx) notifyApproved(ctx, user.name, newStatus, msg => context.error(msg));
+      }).catch(e => context.error('[approveTransfer notify]', e.message));
+
       return { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, newStatus }) };
     } catch (err: any) {
       context.error('[approveTransfer]', err.message);

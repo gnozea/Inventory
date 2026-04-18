@@ -2,6 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { corsHeaders } from '../shared/cors';
 import { getUserFromToken, resolveAuthHeader } from '../shared/auth';
 import { getPool } from '../shared/db';
+import { getTransferContext, notifyDenied } from '../shared/notifications';
 
 // Either the from_agency AgencyAdmin or a SystemAdmin can deny at any pending/agency_approved stage.
 
@@ -53,6 +54,12 @@ app.http('denyTransfer', {
         `);
 
       context.log(`[denyTransfer] ${tr.id} denied by ${user.name}`);
+
+      // Fire-and-forget notification
+      getTransferContext(tr.id, pool).then(ctx => {
+        if (ctx) notifyDenied(ctx, user.name, body.reason || null, msg => context.error(msg));
+      }).catch(e => context.error('[denyTransfer notify]', e.message));
+
       return { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true }) };
     } catch (err: any) {
       context.error('[denyTransfer]', err.message);

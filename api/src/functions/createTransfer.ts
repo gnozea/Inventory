@@ -2,6 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { corsHeaders } from '../shared/cors';
 import { getUserFromToken, resolveAuthHeader } from '../shared/auth';
 import { getPool } from '../shared/db';
+import { getTransferContext, notifyNewRequest } from '../shared/notifications';
 
 app.http('createTransfer', {
   methods: ['POST'],
@@ -67,7 +68,14 @@ app.http('createTransfer', {
              @requestedById, @requestedByName, @notes, @expectedReturnDate)
         `);
 
+      const newId = result.recordset[0].id;
       context.log(`[createTransfer] ${request_type} created for equipment ${equipment_id} by ${user.name}`);
+
+      // Fire-and-forget notification
+      getTransferContext(newId, pool).then(tr => {
+        if (tr) notifyNewRequest(tr, msg => context.error(msg));
+      }).catch(e => context.error('[createTransfer notify]', e.message));
+
       return { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify(result.recordset[0]) };
     } catch (err: any) {
       context.error('[createTransfer]', err.message);

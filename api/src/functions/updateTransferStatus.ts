@@ -2,6 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { corsHeaders } from '../shared/cors';
 import { getUserFromToken, resolveAuthHeader } from '../shared/auth';
 import { getPool } from '../shared/db';
+import { getTransferContext, notifyStatusChanged } from '../shared/notifications';
 
 // Handles logistics transitions after approval:
 //   approved → in_transit → completed (transfer)
@@ -68,6 +69,12 @@ app.http('updateTransferStatus', {
       await request.query(sql);
 
       context.log(`[updateTransferStatus] ${tr.id}: ${tr.status} → ${newStatus} by ${user.name}`);
+
+      // Fire-and-forget notification
+      getTransferContext(tr.id, pool).then(ctx => {
+        if (ctx) notifyStatusChanged(ctx, newStatus, user.name, msg => context.error(msg));
+      }).catch(e => context.error('[updateTransferStatus notify]', e.message));
+
       return { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, oldStatus: tr.status, newStatus }) };
     } catch (err: any) {
       context.error('[updateTransferStatus]', err.message);
