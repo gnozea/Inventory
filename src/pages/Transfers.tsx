@@ -150,7 +150,19 @@ export default function Transfers() {
       </div>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
+        <a
+          href="/transfer-form.html"
+          download="Equipment-Transfer-Form.html"
+          style={{
+            padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 6,
+            border: "1px solid #cbd5e1", background: "#fff", color: "#334155",
+            textDecoration: "none", whiteSpace: "nowrap",
+          }}
+        >
+          ↓ Download Transfer Form
+        </a>
+        <div style={{ width: 1, height: 24, background: "#e2e8f0", flexShrink: 0 }} />
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}

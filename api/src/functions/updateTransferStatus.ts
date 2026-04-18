@@ -8,6 +8,11 @@ import { getTransferContext, notifyStatusChanged } from '../shared/notifications
 //   approved → in_transit → completed (transfer)
 //   approved → in_transit → returned  (borrow)
 // Also allows cancellation of pending/agency_approved requests by originator agency or SystemAdmin.
+//
+// Equipment side-effects:
+//   in_transit              → equipment.status = 3 (Deployed)
+//   returned   (borrow)     → equipment.status = 1 (Active), agency_id unchanged
+//   completed  (transfer)   → equipment.status = 1 (Active), equipment.agency_id = to_agency_id
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   approved:    ['in_transit', 'cancelled'],
@@ -67,6 +72,53 @@ app.http('updateTransferStatus', {
 
       sql += ' WHERE id = @id';
       await request.query(sql);
+
+      // ── Equipment side-effects ─────────────────────────────────────────────
+      if (['in_transit', 'returned', 'completed'].includes(newStatus)) {
+        const eqRow = await pool.request()
+          .input('equipmentId', tr.equipment_id)
+          .query('SELECT status FROM equipment WHERE id = @equipmentId');
+        const oldEquipStatus = eqRow.recordset[0]?.status ?? null;
+
+        let newEquipStatus: number | null = null;
+
+        if (newStatus === 'in_transit') {
+          newEquipStatus = 3; // Deployed
+          await pool.request()
+            .input('equipmentId', tr.equipment_id)
+            .input('status', newEquipStatus)
+            .query('UPDATE equipment SET status = @status, modified_at = GETUTCDATE() WHERE id = @equipmentId');
+
+        } else if (newStatus === 'returned') {
+          newEquipStatus = 1; // Active — borrow ended, back at original agency
+          await pool.request()
+            .input('equipmentId', tr.equipment_id)
+            .input('status', newEquipStatus)
+            .query('UPDATE equipment SET status = @status, modified_at = GETUTCDATE() WHERE id = @equipmentId');
+
+        } else if (newStatus === 'completed' && tr.request_type === 'transfer') {
+          newEquipStatus = 1; // Active at new agency
+          await pool.request()
+            .input('equipmentId', tr.equipment_id)
+            .input('agencyId', tr.to_agency_id)
+            .input('status', newEquipStatus)
+            .query('UPDATE equipment SET agency_id = @agencyId, status = @status, modified_at = GETUTCDATE() WHERE id = @equipmentId');
+        }
+
+        if (newEquipStatus !== null && oldEquipStatus !== null) {
+          await pool.request()
+            .input('equipmentId', tr.equipment_id)
+            .input('oldStatus', oldEquipStatus)
+            .input('newStatus', newEquipStatus)
+            .input('notes', `Auto-updated by ${tr.request_type} transfer ${tr.id} → ${newStatus}`)
+            .input('changedBy', user.name)
+            .query(`
+              INSERT INTO status_log (id, equipment_id, old_status, new_status, notes, changed_by, created_at)
+              VALUES (NEWID(), @equipmentId, @oldStatus, @newStatus, @notes, @changedBy, GETUTCDATE())
+            `);
+          context.log(`[updateTransferStatus] equipment ${tr.equipment_id}: status ${oldEquipStatus} → ${newEquipStatus}${newStatus === 'completed' ? ', agency reassigned' : ''}`);
+        }
+      }
 
       context.log(`[updateTransferStatus] ${tr.id}: ${tr.status} → ${newStatus} by ${user.name}`);
 
