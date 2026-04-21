@@ -1,7 +1,7 @@
 -- Migration 003: Inventory Forms
--- Inventory Control Form (receiving) + Inventory Removal/Transfer Form
+-- Inventory Control Form (receiving) and Inventory Removal/Transfer Form
 
--- ── Inventory Control Form ─────────────────────────────────────────────────
+-- Inventory Control Form header
 CREATE TABLE inventory_control_forms (
   id                    UNIQUEIDENTIFIER  NOT NULL DEFAULT NEWID() PRIMARY KEY,
   form_number           NVARCHAR(50)      NOT NULL,
@@ -28,10 +28,10 @@ CREATE TABLE inventory_control_forms (
   CONSTRAINT CK_icf_status CHECK (status IN ('draft', 'submitted'))
 );
 
-CREATE INDEX IX_icf_agency  ON inventory_control_forms (agency_id);
-CREATE INDEX IX_icf_status  ON inventory_control_forms (status);
+CREATE INDEX IX_icf_agency ON inventory_control_forms (agency_id);
+CREATE INDEX IX_icf_status ON inventory_control_forms (status);
 
--- ── Control Form Line Items ────────────────────────────────────────────────
+-- Control Form line items (one row per equipment piece received)
 CREATE TABLE inventory_control_form_items (
   id                    UNIQUEIDENTIFIER  NOT NULL DEFAULT NEWID() PRIMARY KEY,
   form_id               UNIQUEIDENTIFIER  NOT NULL,
@@ -57,15 +57,18 @@ CREATE TABLE inventory_control_form_items (
 CREATE INDEX IX_icfi_form      ON inventory_control_form_items (form_id);
 CREATE INDEX IX_icfi_equipment ON inventory_control_form_items (equipment_id);
 
--- ── Inventory Removal / Transfer Form ─────────────────────────────────────
+-- Inventory Removal and Transfer Form (one per equipment action)
+-- action_type: removal or transfer
+-- removal_reason: surplus, damage, end-of-life, loss, theft, obsolete
+-- disposal_method: auction, destruction, donation, trade-in, returned-to-vendor
 CREATE TABLE inventory_removal_forms (
   id                          UNIQUEIDENTIFIER  NOT NULL DEFAULT NEWID() PRIMARY KEY,
   form_number                 NVARCHAR(50)      NOT NULL,
   equipment_id                UNIQUEIDENTIFIER  NOT NULL,
-  action_type                 NVARCHAR(20)      NOT NULL,  -- 'removal' | 'transfer'
+  action_type                 NVARCHAR(20)      NOT NULL,
   date_of_action              DATE              NULL,
-  removal_reason              NVARCHAR(100)     NULL,      -- surplus | damage | end-of-life | loss | theft | obsolete
-  disposal_method             NVARCHAR(100)     NULL,      -- auction | destruction | donation | trade-in | returned-to-vendor
+  removal_reason              NVARCHAR(100)     NULL,
+  disposal_method             NVARCHAR(100)     NULL,
   transfer_to_entity          NVARCHAR(255)     NULL,
   transfer_to_agency_id       UNIQUEIDENTIFIER  NULL,
   linked_transfer_request_id  UNIQUEIDENTIFIER  NULL,
@@ -85,8 +88,8 @@ CREATE TABLE inventory_removal_forms (
   modified_at                 DATETIME2         NOT NULL DEFAULT GETUTCDATE(),
   submitted_at                DATETIME2         NULL,
 
-  CONSTRAINT FK_irf_equipment     FOREIGN KEY (equipment_id)           REFERENCES equipment(id),
-  CONSTRAINT FK_irf_to_agency     FOREIGN KEY (transfer_to_agency_id)  REFERENCES agencies(id),
+  CONSTRAINT FK_irf_equipment     FOREIGN KEY (equipment_id)               REFERENCES equipment(id),
+  CONSTRAINT FK_irf_to_agency     FOREIGN KEY (transfer_to_agency_id)      REFERENCES agencies(id),
   CONSTRAINT FK_irf_transfer_req  FOREIGN KEY (linked_transfer_request_id) REFERENCES transfer_requests(id),
   CONSTRAINT CK_irf_action        CHECK (action_type IN ('removal', 'transfer')),
   CONSTRAINT CK_irf_status        CHECK (status IN ('draft', 'submitted'))
