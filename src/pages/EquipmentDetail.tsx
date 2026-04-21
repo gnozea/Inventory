@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMsal } from "@azure/msal-react";
@@ -6,6 +6,7 @@ import { useCurrentUser } from "../hooks/useCurrentUser";
 import { apiScopes } from "../auth/msalConfig";
 import AccessDenied from "../components/AccessDenied";
 import TransferRequestModal from "../components/TransferRequestModal";
+import { useControlFormApi, useRemovalFormApi } from "../api/client";
 
 async function apiFetch(instance: any, account: any, path: string, options?: RequestInit) {
   let tok;
@@ -60,8 +61,11 @@ function formatDate(d?: string | null) { return d ? new Date(d).toLocaleDateStri
 export default function EquipmentDetail() {
   const { id } = useParams();
   const api = useApi();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const { user } = useCurrentUser();
+  const controlFormApi = useControlFormApi();
+  const removalFormApi = useRemovalFormApi();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<any>(null);
   const [toast, setToast] = useState("");
@@ -79,6 +83,17 @@ export default function EquipmentDetail() {
     enabled: !!id,
   });
   const statusLogs = logData?.value || logData || [];
+
+  const { data: controlForms = [] } = useQuery({
+    queryKey: ["control-forms-for-eq", id],
+    queryFn: () => controlFormApi.getForms({ equipmentId: id }),
+    enabled: !!id,
+  });
+  const { data: removalForms = [] } = useQuery({
+    queryKey: ["removal-forms-for-eq", id],
+    queryFn: () => removalFormApi.getForms({ equipmentId: id }),
+    enabled: !!id,
+  });
 
   // Status update
   const statusMut = useMutation({
@@ -259,6 +274,69 @@ export default function EquipmentDetail() {
           </table>
         ) : (
           <p style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic" }}>No status changes recorded.</p>
+        )}
+      </div>
+
+      {/* Forms */}
+      <div style={S.card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h2 style={{ ...S.h2, margin: 0, border: "none", paddingBottom: 0 }}>Forms</h2>
+          {canEdit && (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button style={{ ...S.btnS, fontSize: 12 }} onClick={() => navigate(`/forms/control/new?equipmentId=${eq.id}`)}>
+                + Control Form
+              </button>
+              <button style={{ ...S.btnS, fontSize: 12 }} onClick={() => navigate(`/forms/removal/new?equipmentId=${eq.id}`)}>
+                + Removal Form
+              </button>
+            </div>
+          )}
+        </div>
+        {controlForms.length === 0 && removalForms.length === 0 ? (
+          <p style={{ color: "#94a3b8", fontSize: 13, fontStyle: "italic" }}>No forms linked to this equipment.</p>
+        ) : (
+          <div>
+            {(controlForms as any[]).map((f: any) => (
+              <div key={f.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <div>
+                  <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{f.form_number}</span>
+                  <span style={{ marginLeft: 10, fontSize: 12, color: "#64748b" }}>Control Form</span>
+                  <span style={{ marginLeft: 10, fontSize: 11, padding: "1px 6px", borderRadius: 999, background: f.status === "submitted" ? "#d1fae5" : "#fef3c7", color: f.status === "submitted" ? "#065f46" : "#92400e" }}>
+                    {f.status}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button style={{ ...S.btnS, fontSize: 12, padding: "4px 10px" }} onClick={() => navigate(`/forms/control/${f.id}`)}>
+                    {f.status === "draft" ? "Edit" : "View"}
+                  </button>
+                  {f.status === "submitted" && (
+                    <button style={{ ...S.btnS, fontSize: 12, padding: "4px 10px" }} onClick={() => window.open(`/forms/control/${f.id}/print`, "_blank")}>Print</button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {(removalForms as any[]).map((f: any) => (
+              <div key={f.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <div>
+                  <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{f.form_number}</span>
+                  <span style={{ marginLeft: 10, fontSize: 12, color: "#64748b" }}>
+                    {f.action_type === "transfer" ? "Transfer Form" : "Removal Form"}
+                  </span>
+                  <span style={{ marginLeft: 10, fontSize: 11, padding: "1px 6px", borderRadius: 999, background: f.status === "submitted" ? "#d1fae5" : "#fef3c7", color: f.status === "submitted" ? "#065f46" : "#92400e" }}>
+                    {f.status}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button style={{ ...S.btnS, fontSize: 12, padding: "4px 10px" }} onClick={() => navigate(`/forms/removal/${f.id}`)}>
+                    {f.status === "draft" ? "Edit" : "View"}
+                  </button>
+                  {f.status === "submitted" && (
+                    <button style={{ ...S.btnS, fontSize: 12, padding: "4px 10px" }} onClick={() => window.open(`/forms/removal/${f.id}/print`, "_blank")}>Print</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

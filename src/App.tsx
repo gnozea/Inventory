@@ -30,6 +30,12 @@ import Admin, {
 } from "./pages/Admin";
 import Transfers from "./pages/Transfers";
 import Library from "./pages/Library";
+import ControlFormList from "./pages/forms/ControlFormList";
+import ControlFormEdit from "./pages/forms/ControlFormEdit";
+import ControlFormPrint from "./pages/forms/ControlFormPrint";
+import RemovalFormList from "./pages/forms/RemovalFormList";
+import RemovalFormEdit from "./pages/forms/RemovalFormEdit";
+import RemovalFormPrint from "./pages/forms/RemovalFormPrint";
 import AccessDenied from "./components/AccessDenied";
 import { useCurrentUser } from "./hooks/useCurrentUser";
 import { loginRequest } from "./auth/msalConfig";
@@ -261,6 +267,9 @@ export default function App() {
     isSystemAdmin || isGlobalViewer || isAgencyAdmin || isAgencyUser;
   const canViewLibrary =
     isSystemAdmin || isGlobalViewer || isAgencyAdmin || isAgencyUser || isAgencyReporter;
+  const canViewForms =
+    isSystemAdmin || isGlobalViewer || isAgencyAdmin || isAgencyUser || isAgencyReporter;
+  const canEditForms = isSystemAdmin || isAgencyAdmin || isAgencyUser;
 
   return (
     <RouterRoutes>
@@ -309,6 +318,12 @@ export default function App() {
           path="/library"
           element={canViewLibrary ? <Library /> : <AccessDenied />}
         />
+        <Route path="/forms/control" element={canViewForms ? <ControlFormList /> : <AccessDenied />} />
+        <Route path="/forms/control/new" element={canEditForms ? <ControlFormEdit /> : <AccessDenied />} />
+        <Route path="/forms/control/:id" element={canViewForms ? <ControlFormEdit /> : <AccessDenied />} />
+        <Route path="/forms/removal" element={canViewForms ? <RemovalFormList /> : <AccessDenied />} />
+        <Route path="/forms/removal/new" element={canEditForms ? <RemovalFormEdit /> : <AccessDenied />} />
+        <Route path="/forms/removal/:id" element={canViewForms ? <RemovalFormEdit /> : <AccessDenied />} />
         <Route
           path="/admin"
           element={canViewSettings ? <Admin /> : <AccessDenied />}
@@ -341,6 +356,9 @@ export default function App() {
         </Route>
         <Route path="*" element={<RouterNavigate to="/" replace />} />
       </Route>
+      {/* Print routes — no sidebar, standalone page */}
+      <Route path="/forms/control/:id/print" element={<ControlFormPrint />} />
+      <Route path="/forms/removal/:id/print" element={<RemovalFormPrint />} />
     </RouterRoutes>
   );
 }

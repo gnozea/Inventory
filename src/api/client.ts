@@ -177,6 +177,62 @@ export function useTransferApi() {
   };
 }
 
+export function useControlFormApi() {
+  const { apiFetch } = useApiClient();
+  return {
+    async getForms(filters?: { equipmentId?: string; status?: string }) {
+      const params = new URLSearchParams();
+      if (filters?.equipmentId) params.set('equipmentId', filters.equipmentId);
+      if (filters?.status) params.set('status', filters.status);
+      const res = await apiFetch<{ value: any[] }>(`/control-forms?${params}`);
+      return res.value;
+    },
+    async getFormById(id: string) {
+      return apiFetch<any>(`/control-forms/${id}`);
+    },
+    async createForm(body: any) {
+      return apiFetch<{ id: string; form_number: string }>('/control-forms', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+    async updateForm(id: string, body: any) {
+      return apiFetch<any>(`/control-forms/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+    },
+  };
+}
+
+export function useRemovalFormApi() {
+  const { apiFetch } = useApiClient();
+  return {
+    async getForms(filters?: { equipmentId?: string; status?: string }) {
+      const params = new URLSearchParams();
+      if (filters?.equipmentId) params.set('equipmentId', filters.equipmentId);
+      if (filters?.status) params.set('status', filters.status);
+      const res = await apiFetch<{ value: any[] }>(`/removal-forms?${params}`);
+      return res.value;
+    },
+    async getFormById(id: string) {
+      return apiFetch<any>(`/removal-forms/${id}`);
+    },
+    async createForm(body: any) {
+      return apiFetch<{ id: string; form_number: string }>('/removal-forms', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    },
+    async updateForm(id: string, body: any) {
+      return apiFetch<any>(`/removal-forms/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+    },
+  };
+}
+
 export function useLibraryApi() {
   const { apiFetch } = useApiClient();
   return {

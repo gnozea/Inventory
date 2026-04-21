@@ -43,6 +43,7 @@ export default function AddEquipment() {
     location_id: "",
   });
   const [error, setError] = useState("");
+  const [createdId, setCreatedId] = useState<string | null>(null);
 
   // Fetch reference data for categories
   const { data: refData } = useQuery({
@@ -73,7 +74,7 @@ export default function AddEquipment() {
   const createMut = useMutation({
     mutationFn: (body: any) => apiFetch(instance, accounts[0], "/equipment", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: (data) => {
-      navigate(`/equipment/${data?.id || ""}`);
+      setCreatedId(data?.id || null);
     },
     onError: (err: any) => {
       setError(err.message);
@@ -97,6 +98,41 @@ export default function AddEquipment() {
       contact_email: form.contact_email.trim() || null,
     });
   };
+
+  // Success banner after equipment created
+  if (createdId) {
+    return (
+      <div style={{ maxWidth: 720 }}>
+        <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: 28, textAlign: "center" }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
+          <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#166534" }}>Equipment Added</h2>
+          <p style={{ margin: "0 0 20px", fontSize: 14, color: "#15803d" }}>
+            The equipment record was created successfully.
+          </p>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+            <button
+              style={{ padding: "9px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer", borderRadius: 6, border: "none", background: "#3b82f6", color: "#fff" }}
+              onClick={() => navigate(`/forms/control/new?equipmentId=${createdId}`)}
+            >
+              Fill Out Inventory Control Form
+            </button>
+            <button
+              style={{ padding: "9px 20px", fontSize: 13, fontWeight: 500, cursor: "pointer", borderRadius: 6, border: "1px solid #cbd5e1", background: "#fff", color: "#334155" }}
+              onClick={() => navigate(`/equipment/${createdId}`)}
+            >
+              View Equipment Record
+            </button>
+            <button
+              style={{ padding: "9px 20px", fontSize: 13, fontWeight: 500, cursor: "pointer", borderRadius: 6, border: "1px solid #cbd5e1", background: "#fff", color: "#334155" }}
+              onClick={() => navigate("/equipment")}
+            >
+              Back to Equipment List
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 720 }}>

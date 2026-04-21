@@ -108,6 +108,11 @@ export default function Layout() {
               <SidebarItem to="/library"   icon="📚">Library</SidebarItem>
             </NavSection>
 
+            <NavSection label="Forms">
+              <SidebarItem to="/forms/control" icon="📋" prefix="/forms/control">Control Forms</SidebarItem>
+              <SidebarItem to="/forms/removal"  icon="📤" prefix="/forms/removal">Removal Forms</SidebarItem>
+            </NavSection>
+
             {(isGlobalViewer || isSystemAdmin) && (
               <NavSection label="Cross-agency">
                 <SidebarItem to="/search" icon="⌕">Global search</SidebarItem>
@@ -151,19 +156,24 @@ function NavSection({ label, children }: { label: string; children: React.ReactN
   );
 }
 
-function SidebarItem({ to, icon, children }: { to: string; icon: string; children: React.ReactNode }) {
+function SidebarItem({ to, icon, children, prefix }: { to: string; icon: string; children: React.ReactNode; prefix?: string }) {
+  const pathname = window.location.pathname;
+  const prefixActive = prefix ? pathname.startsWith(prefix) : false;
   return (
     <NavLink
       to={to}
-      end
-      style={({ isActive }) => ({
-        display: "flex", alignItems: "center", gap: 10,
-        padding: "8px 10px", borderRadius: 6, marginBottom: 2,
-        fontSize: 13, textDecoration: "none",
-        color: isActive ? "#fff" : "#94a3b8",
-        background: isActive ? "#3b82f6" : "transparent",
-        fontWeight: isActive ? 600 : 400,
-      })}
+      end={!prefix}
+      style={({ isActive }) => {
+        const active = isActive || prefixActive;
+        return {
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "8px 10px", borderRadius: 6, marginBottom: 2,
+          fontSize: 13, textDecoration: "none",
+          color: active ? "#fff" : "#94a3b8",
+          background: active ? "#3b82f6" : "transparent",
+          fontWeight: active ? 600 : 400,
+        };
+      }}
     >
       <span style={{ fontSize: 14, width: 16, textAlign: "center" }}>{icon}</span>
       {children}
